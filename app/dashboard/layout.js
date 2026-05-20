@@ -10,7 +10,6 @@ import {
   Grid,
   Bell,
   FolderOpen,
-  CreditCard,
   HelpCircle,
   User,
   Mic,
@@ -69,7 +68,6 @@ export default function DashboardLayout({ children }) {
     { name: "Services", path: "/dashboard/eligibility", icon: Grid },
     { name: "Notifications", path: "/dashboard/notifications", icon: Bell, badge: notifications.filter(n => !n.read).length || null },
     { name: "Documents", path: "/dashboard/upload", icon: FolderOpen },
-    { name: "Payments", path: "/dashboard/payments", icon: CreditCard },
     { name: "Help & Support", path: "/dashboard/chat", icon: HelpCircle },
     { name: "Profile", path: "/dashboard/settings", icon: User },
   ];

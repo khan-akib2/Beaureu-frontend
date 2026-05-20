@@ -145,7 +145,7 @@ export default function DocumentUploadPage() {
 
   const handleDelete = async (docId) => {
     try {
-      const res = await fetch(`/api/documents/${docId}`, { method: "DELETE" });
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${docId}`, { method: "DELETE", credentials: "include" });
       if (res.ok) {
         const updatedList = documents.filter((d) => d._id !== docId);
         setDocuments(updatedList);
