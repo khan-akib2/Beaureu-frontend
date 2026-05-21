@@ -6,7 +6,6 @@ function parseJwt(token) {
     const base64Url = token.split(".")[1];
     if (!base64Url) return null;
     const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    // Decode base64 to string using atob
     const raw = atob(base64);
     return JSON.parse(raw);
   } catch (e) {
@@ -40,16 +39,16 @@ export function proxy(request) {
     return NextResponse.next();
   }
 
-  // 2. Authenticated Admin routing rules
+  // 2. Authenticated Admin trying to access Citizen routes
   if (user.role === "admin") {
-    if (pathname.startsWith("/dashboard") || pathname === "/login" || pathname === "/signup") {
+    if (pathname.startsWith("/dashboard")) {
       return NextResponse.redirect(new URL("/admin", request.url));
     }
   }
 
-  // 3. Authenticated Citizen routing rules
+  // 3. Authenticated Citizen trying to access Admin routes
   if (user.role !== "admin") {
-    if (pathname.startsWith("/admin") || pathname === "/login" || pathname === "/signup") {
+    if (pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }
@@ -60,8 +59,6 @@ export function proxy(request) {
 export const config = {
   matcher: [
     "/dashboard/:path*",
-    "/admin/:path*",
-    "/login",
-    "/signup"
+    "/admin/:path*"
   ],
 };

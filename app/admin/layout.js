@@ -2,7 +2,7 @@
 
 import React, { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
+import { usePathname, useRouter, useSearchParams } from "next/navigation";
 import {
   ShieldAlert,
   Home,
@@ -28,17 +28,11 @@ export const useAdmin = () => useContext(AdminContext);
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
+  const searchParams = useSearchParams();
+  const currentTab = searchParams.get("tab");
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
-  const [currentTab, setCurrentTab] = useState(null);
-
-  useEffect(() => {
-    if (typeof window !== "undefined") {
-      const params = new URLSearchParams(window.location.search);
-      setCurrentTab(params.get("tab"));
-    }
-  }, [pathname]);
 
   useEffect(() => {
     async function verifyAdminSession() {
@@ -51,9 +45,10 @@ export default function AdminLayout({ children }) {
           return;
         }
         setAdmin(data.user);
-        setLoading(false);
       } catch {
         router.push("/login");
+      } finally {
+        setLoading(false);
       }
     }
     verifyAdminSession();
@@ -119,10 +114,10 @@ export default function AdminLayout({ children }) {
 
   return (
     <AdminContext.Provider value={{ admin }}>
-      <div className="min-h-screen flex bg-slate-50 font-sans antialiased text-slate-900">
+      <div className="h-screen flex overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
 
         {/* Sidebar Desktop */}
-        <aside className="hidden lg:block w-64 bg-[#0a192f] sticky top-0 h-screen z-20">
+        <aside className="hidden lg:flex lg:flex-col w-64 shrink-0 bg-[#0a192f] overflow-hidden">
           <SidebarContent pathname={pathname} handleLogout={handleLogout} adminLinks={adminLinks} currentTab={currentTab} />
         </aside>
 
@@ -137,10 +132,10 @@ export default function AdminLayout({ children }) {
         )}
 
         {/* Main Content Workspace */}
-        <div className="flex-1 flex flex-col min-w-0">
+        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
           
           {/* Header */}
-          <header className="sticky top-0 z-30 bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between">
+          <header className="shrink-0 bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between z-20">
             <div className="flex items-center gap-3">
               <button 
                 onClick={() => setMobileOpen(true)}
@@ -172,7 +167,7 @@ export default function AdminLayout({ children }) {
           </header>
 
           {/* Page content view */}
-          <main className="flex-1 p-6 overflow-y-auto">
+          <main className="flex-1 overflow-y-auto p-6">
             <div className="max-w-7xl mx-auto">
               {children}
             </div>
@@ -186,8 +181,8 @@ export default function AdminLayout({ children }) {
 
 function SidebarContent({ pathname, handleLogout, adminLinks, currentTab }) {
   return (
-    <div className="flex flex-col h-full bg-[#0a192f] text-slate-300 font-sans select-none justify-between">
-      <div>
+    <div className="flex flex-col h-full bg-[#0a192f] text-slate-300 font-sans select-none justify-between overflow-hidden">
+      <div className="flex-1 overflow-y-auto min-h-0">
         {/* Emblem & Logo Header */}
         <div className="px-6 py-5 border-b border-slate-800 flex items-center gap-3">
           <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white/10 rounded-lg p-1.5 border border-white/5">
@@ -210,9 +205,8 @@ function SidebarContent({ pathname, handleLogout, adminLinks, currentTab }) {
         <nav className="px-4 py-6 space-y-1">
           {adminLinks.map((link) => {
             const Icon = link.icon;
-            const active = link.path === "/admin" 
-              ? (!currentTab && pathname === "/admin")
-              : (link.path.includes(`tab=${currentTab}`));
+            const linkTab = new URLSearchParams(link.path.split("?")[1] || "").get("tab");
+            const active = linkTab ? linkTab === currentTab : (!currentTab && pathname === "/admin");
             return (
               <Link
                 key={link.path}

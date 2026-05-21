@@ -46,6 +46,26 @@ export default function SignupPage() {
     return () => clearInterval(interval);
   }, [resendTimer]);
 
+  // Redirect if already logged in with a valid session
+  useEffect(() => {
+    async function checkSession() {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, { credentials: "include" });
+        if (res.ok) {
+          const data = await res.json();
+          if (data.user?.role === "admin") {
+            router.push("/admin");
+          } else {
+            router.push("/dashboard");
+          }
+        }
+      } catch (err) {
+        // Ignored
+      }
+    }
+    checkSession();
+  }, [router]);
+
   // Load Google Identity Services script on mount for synchronous prompt execution
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
