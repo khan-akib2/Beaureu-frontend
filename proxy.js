@@ -32,22 +32,24 @@ export function proxy(request) {
   const user = token ? parseJwt(token) : null;
   const isAuthenticated = user && user.exp * 1000 > Date.now();
 
-  // 1. User is trying to access login/signup but is already logged in
-  if ((pathname === "/login" || pathname === "/signup") && isAuthenticated) {
-    return NextResponse.redirect(new URL("/dashboard", request.url));
-  }
-
-  // 2. Protect Dashboard Routes
-  if (pathname.startsWith("/dashboard") && !isAuthenticated) {
-    return NextResponse.redirect(new URL("/login", request.url));
-  }
-
-  // 3. Protect Admin Routes
-  if (pathname.startsWith("/admin")) {
-    if (!isAuthenticated) {
+  // 1. Unauthenticated users trying to access protected routes
+  if (!isAuthenticated) {
+    if (pathname.startsWith("/dashboard") || pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/login", request.url));
     }
-    if (user.role !== "admin") {
+    return NextResponse.next();
+  }
+
+  // 2. Authenticated Admin routing rules
+  if (user.role === "admin") {
+    if (pathname.startsWith("/dashboard") || pathname === "/login" || pathname === "/signup") {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+  }
+
+  // 3. Authenticated Citizen routing rules
+  if (user.role !== "admin") {
+    if (pathname.startsWith("/admin") || pathname === "/login" || pathname === "/signup") {
       return NextResponse.redirect(new URL("/dashboard", request.url));
     }
   }

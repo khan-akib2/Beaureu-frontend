@@ -19,6 +19,8 @@ import {
   Settings
 } from "lucide-react";
 
+import { TRANSLATIONS } from "../../lib/translations";
+
 const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
 
@@ -34,6 +36,21 @@ export default function DashboardLayout({ children }) {
   const [notifPanelOpen, setNotifPanelOpen] = useState(false);
   const [notifications, setNotifications] = useState([]);
   const [showDropdown, setShowDropdown] = useState(false);
+  const [language, setLanguageState] = useState("en");
+
+  useEffect(() => {
+    const stored = localStorage.getItem("bureau_language");
+    if (stored && ["en", "hi", "mr", "ur"].includes(stored)) {
+      setTimeout(() => setLanguageState(stored), 0);
+    }
+  }, []);
+
+  const setLanguage = (lang) => {
+    localStorage.setItem("bureau_language", lang);
+    setLanguageState(lang);
+  };
+
+  const t = (key) => TRANSLATIONS[language]?.[key] || TRANSLATIONS["en"]?.[key] || key;
 
   useEffect(() => {
     async function initSession() {
@@ -41,16 +58,26 @@ export default function DashboardLayout({ children }) {
         const res = await fetch(`${API}/api/auth/me`, FETCH_OPTS);
         if (!res.ok) { router.push("/login"); return; }
         const data = await res.json();
+        if (data.user?.role === "admin") {
+          router.replace("/admin");
+          return;
+        }
         setUser(data.user);
+        
+        // Sync language state with user preference if present
+        if (data.user?.language && ["en", "hi", "mr", "ur"].includes(data.user.language)) {
+          setLanguageState(data.user.language);
+          localStorage.setItem("bureau_language", data.user.language);
+        }
+
         const notifRes = await fetch(`${API}/api/notifications`, FETCH_OPTS);
         if (notifRes.ok) {
           const notifData = await notifRes.json();
           setNotifications(notifData.notifications || []);
         }
+        setLoading(false);
       } catch {
         router.push("/login");
-      } finally {
-        setLoading(false);
       }
     }
     initSession();
@@ -63,13 +90,13 @@ export default function DashboardLayout({ children }) {
   };
 
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: Home },
-    { name: "My Applications", path: "/dashboard/tracker", icon: FileText },
-    { name: "Services", path: "/dashboard/eligibility", icon: Grid },
-    { name: "Notifications", path: "/dashboard/notifications", icon: Bell, badge: notifications.filter(n => !n.read).length || null },
-    { name: "Documents", path: "/dashboard/upload", icon: FolderOpen },
-    { name: "Help & Support", path: "/dashboard/chat", icon: HelpCircle },
-    { name: "Profile", path: "/dashboard/settings", icon: User },
+    { name: t("nav_dashboard"), path: "/dashboard", icon: Home },
+    { name: t("nav_my_applications"), path: "/dashboard/tracker", icon: FileText },
+    { name: t("nav_services"), path: "/dashboard/eligibility", icon: Grid },
+    { name: t("nav_notifications"), path: "/dashboard/notifications", icon: Bell, badge: notifications.filter(n => !n.read).length || null },
+    { name: t("nav_documents"), path: "/dashboard/upload", icon: FolderOpen },
+    { name: t("nav_help_support"), path: "/dashboard/chat", icon: HelpCircle },
+    { name: t("nav_profile"), path: "/dashboard/settings", icon: User },
   ];
 
   if (loading) {
@@ -89,85 +116,8 @@ export default function DashboardLayout({ children }) {
 
   const unreadCount = notifications.filter(n => !n.read).length;
 
-  const SidebarContent = () => (
-    <div className="flex flex-col h-full bg-white select-none">
-      {/* Emblem & Logo Header */}
-      <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
-        <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#1a56db] rounded-lg shadow-sm shadow-blue-500/30">
-          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-          </svg>
-        </div>
-        <div>
-          <div className="font-bold text-slate-900 text-sm leading-tight font-sans tracking-tight">BureauAI</div>
-          <p className="text-[10px] text-slate-400 font-medium font-sans leading-none mt-0.5">Bharat Sarkar Portal</p>
-        </div>
-      </div>
-
-      {/* User mini-card */}
-      <div className="mx-3 mt-4 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 flex-shrink-0">
-        <img
-          src={user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user?.name || "user")}`}
-          alt="avatar"
-          className="w-8 h-8 rounded-full border border-slate-200 object-cover"
-        />
-        <div className="min-w-0">
-          <p className="text-xs font-bold text-slate-800 truncate">{user?.name || "Citizen"}</p>
-          <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
-        </div>
-      </div>
-
-      {/* Nav Link List */}
-      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
-        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">Main Menu</p>
-        {navLinks.map((link) => {
-          const Icon = link.icon;
-          const active = pathname === link.path;
-          return (
-            <Link
-              key={link.path}
-              href={link.path}
-              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
-                active
-                  ? "bg-[#1a56db] text-white shadow-sm shadow-blue-500/20"
-                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
-              }`}
-            >
-              <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${active ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
-              <span className="font-sans flex-1">{link.name}</span>
-              {link.badge > 0 && (
-                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
-                  active ? "bg-white/20 text-white" : "bg-red-500 text-white"
-                }`}>
-                  {link.badge}
-                </span>
-              )}
-            </Link>
-          );
-        })}
-      </nav>
-
-      {/* Speak with AI Button */}
-      <div className="p-3 border-t border-slate-100 flex-shrink-0">
-        <Link href="/dashboard/chat">
-          <button className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#1a56db] to-blue-600 text-white hover:from-blue-700 hover:to-blue-700 transition-all flex items-center justify-center gap-2 text-xs font-bold font-sans shadow-sm shadow-blue-500/20">
-            <Mic className="w-3.5 h-3.5" />
-            <span>Speak with AI Assistant</span>
-          </button>
-        </Link>
-        <button
-          onClick={handleLogout}
-          className="w-full mt-2 py-2 px-4 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-2 text-xs font-semibold"
-        >
-          <LogOut className="w-3.5 h-3.5" />
-          Sign Out
-        </button>
-      </div>
-    </div>
-  );
-
   return (
-    <UserContext.Provider value={{ user, setUser, notifications, setNotifications }}>
+    <UserContext.Provider value={{ user, setUser, notifications, setNotifications, language, setLanguage }}>
       {/* Full-height flex container — sidebar + main side by side, NO vertical scroll on container */}
       <div className="h-screen flex overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
 
@@ -175,7 +125,7 @@ export default function DashboardLayout({ children }) {
 
         {/* Sidebar Desktop — fixed height, no page scroll */}
         <aside className="hidden lg:flex lg:flex-col w-60 flex-shrink-0 bg-white border-r border-slate-200/80 overflow-hidden">
-          <SidebarContent />
+          <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} t={t} />
         </aside>
 
         {/* Mobile Drawer */}
@@ -183,7 +133,7 @@ export default function DashboardLayout({ children }) {
           <div className="lg:hidden fixed inset-0 z-50 flex">
             <div className="fixed inset-0 bg-slate-900/40 backdrop-blur-sm" onClick={() => setMobileMenuOpen(false)} />
             <aside className="relative flex flex-col w-60 bg-white border-r border-slate-200 z-50 animate-slide-in">
-              <SidebarContent />
+              <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} t={t} />
             </aside>
           </div>
         )}
@@ -206,10 +156,10 @@ export default function DashboardLayout({ children }) {
 
             <div className="flex-1">
               <h2 className="text-sm font-bold text-slate-900 font-sans tracking-tight">
-                Welcome back, <span className="text-[#1a56db]">{user?.name?.split(" ")[0] || "Citizen"}</span> 👋
+                {t("welcome_back")}, <span className="text-[#1a56db]">{user?.name?.split(" ")[0] || "Citizen"}</span> 👋
               </h2>
               <p className="text-[10px] text-slate-400 font-medium font-sans">
-                {new Date().toLocaleDateString("en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
+                {new Date().toLocaleDateString(language === "hi" ? "hi-IN" : language === "mr" ? "mr-IN" : language === "ur" ? "ur-PK" : "en-IN", { weekday: "long", day: "numeric", month: "long", year: "numeric" })}
               </p>
             </div>
 
@@ -315,5 +265,84 @@ export default function DashboardLayout({ children }) {
         </div>
       </div>
     </UserContext.Provider>
+  );
+}
+
+function SidebarContent({ user, navLinks, pathname, handleLogout, t }) {
+  return (
+    <div className="flex flex-col h-full bg-white select-none">
+      {/* Emblem & Logo Header */}
+      <div className="px-5 py-4 border-b border-slate-100 flex items-center gap-3 flex-shrink-0">
+        <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-[#1a56db] rounded-lg shadow-sm shadow-blue-500/30">
+          <svg className="w-5 h-5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+            <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
+          </svg>
+        </div>
+        <div>
+          <div className="font-bold text-slate-900 text-sm leading-tight font-sans tracking-tight">BureauAI</div>
+          <p className="text-[10px] text-slate-400 font-medium font-sans leading-none mt-0.5">Bharat Sarkar Portal</p>
+        </div>
+      </div>
+
+      {/* User mini-card */}
+      <div className="mx-3 mt-4 mb-2 p-3 bg-slate-50 rounded-xl border border-slate-100 flex items-center gap-3 flex-shrink-0">
+        <img
+          src={user?.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(user?.name || "user")}`}
+          alt="avatar"
+          className="w-8 h-8 rounded-full border border-slate-200 object-cover"
+        />
+        <div className="min-w-0">
+          <p className="text-xs font-bold text-slate-800 truncate">{user?.name || "Citizen"}</p>
+          <p className="text-[10px] text-slate-400 truncate">{user?.email}</p>
+        </div>
+      </div>
+
+      {/* Nav Link List */}
+      <nav className="flex-1 px-3 py-3 space-y-0.5 overflow-y-auto">
+        <p className="text-[9px] font-bold text-slate-400 uppercase tracking-widest px-3 mb-2">{t("main_menu")}</p>
+        {navLinks.map((link) => {
+          const Icon = link.icon;
+          const active = pathname === link.path;
+          return (
+            <Link
+              key={link.path}
+              href={link.path}
+              className={`flex items-center gap-3 px-3 py-2.5 rounded-xl text-xs font-semibold transition-all group ${
+                active
+                  ? "bg-[#1a56db] text-white shadow-sm shadow-blue-500/20"
+                  : "text-slate-600 hover:text-slate-900 hover:bg-slate-50"
+              }`}
+            >
+              <Icon className={`w-4 h-4 flex-shrink-0 transition-colors ${active ? "text-white" : "text-slate-400 group-hover:text-slate-600"}`} />
+              <span className="font-sans flex-1">{link.name}</span>
+              {link.badge > 0 && (
+                <span className={`text-[9px] font-bold px-1.5 py-0.5 rounded-full ${
+                  active ? "bg-white/20 text-white" : "bg-red-500 text-white"
+                }`}>
+                  {link.badge}
+                </span>
+              )}
+            </Link>
+          );
+        })}
+      </nav>
+
+      {/* Speak with AI Button */}
+      <div className="p-3 border-t border-slate-100 flex-shrink-0">
+        <Link href="/dashboard/chat">
+          <button className="w-full py-2.5 px-4 rounded-xl bg-gradient-to-r from-[#1a56db] to-blue-600 text-white hover:from-blue-700 hover:to-blue-700 transition-all flex items-center justify-center gap-2 text-xs font-bold font-sans shadow-sm shadow-blue-500/20">
+            <Mic className="w-3.5 h-3.5" />
+            <span>{t("nav_speak_ai")}</span>
+          </button>
+        </Link>
+        <button
+          onClick={handleLogout}
+          className="w-full mt-2 py-2 px-4 rounded-xl text-slate-500 hover:text-red-600 hover:bg-red-50 transition-all flex items-center justify-center gap-2 text-xs font-semibold"
+        >
+          <LogOut className="w-3.5 h-3.5" />
+          {t("nav_sign_out")}
+        </button>
+      </div>
+    </div>
   );
 }

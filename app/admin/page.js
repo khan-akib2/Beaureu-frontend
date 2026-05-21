@@ -51,9 +51,22 @@ export default function AdminPage() {
   const [toastType, setToastType] = useState("success");
   const [showAdminConsole, setShowAdminConsole] = useState(false);
 
+  const searchString = typeof window !== "undefined" ? window.location.search : "";
+
   useEffect(() => {
-    fetchAdminData();
-  }, []);
+    const params = new URLSearchParams(searchString);
+    const tab = params.get("tab");
+    if (tab) {
+      if (["documents", "applications", "users"].includes(tab)) {
+        setActiveTab(tab);
+        setShowAdminConsole(true);
+      } else {
+        setActiveTab(tab);
+      }
+    } else {
+      setShowAdminConsole(false);
+    }
+  }, [searchString]);
 
   async function fetchAdminData() {
     try {
@@ -85,6 +98,12 @@ export default function AdminPage() {
       setLoading(false);
     }
   }
+
+  useEffect(() => {
+    setTimeout(() => {
+      fetchAdminData();
+    }, 0);
+  }, []);
 
   const triggerToast = (msg, type = "success") => {
     setToastMessage(msg);

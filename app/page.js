@@ -1,11 +1,43 @@
-import Link from "next/link";
+"use client";
 
-export const metadata = {
-  title: "BureauAI — India's AI-Powered Governance Portal",
-  description: "Navigate Indian government services with AI. Apply for Aadhaar, PAN, Passport, Income Certificates, find welfare schemes and track applications — all in one place.",
-};
+import React, { useState, useEffect } from "react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+const FETCH_OPTS = { credentials: "include" };
 
 export default function LandingPage() {
+  const router = useRouter();
+  const [user, setUser] = useState(null);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    async function checkAuth() {
+      try {
+        const res = await fetch(`${API}/api/auth/me`, FETCH_OPTS);
+        if (res.ok) {
+          const data = await res.json();
+          setUser(data.user);
+        }
+      } catch (err) {
+        console.error("Auth check failed:", err);
+      } finally {
+        setLoading(false);
+      }
+    }
+    checkAuth();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await fetch(`${API}/api/auth/logout`, { method: "POST", ...FETCH_OPTS });
+      setUser(null);
+      router.refresh();
+    } catch (err) {
+      console.error("Logout failed:", err);
+    }
+  };
   const features = [
     {
       icon: "🤖",
@@ -97,13 +129,30 @@ export default function LandingPage() {
           </div>
 
           {/* CTA Buttons */}
-          <div className="flex items-center gap-3">
-            <Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-[#1a56db] transition-colors px-3 py-1.5">
-              Sign In
-            </Link>
-            <Link href="/signup" className="text-sm font-bold text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-px">
-              Get Started Free
-            </Link>
+          <div className="flex items-center gap-3 min-h-[40px]">
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <button onClick={handleLogout} className="text-sm font-semibold text-slate-700 hover:text-red-600 transition-colors px-3 py-1.5">
+                      Logout
+                    </button>
+                    <Link href={user.role === "admin" ? "/admin" : "/dashboard"} className="text-sm font-bold text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-px">
+                      Dashboard
+                    </Link>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-[#1a56db] transition-colors px-3 py-1.5">
+                      Sign In
+                    </Link>
+                    <Link href="/signup" className="text-sm font-bold text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-px">
+                      Get Started Free
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
         </div>
       </nav>
@@ -134,7 +183,7 @@ export default function LandingPage() {
 
             <div>
               <h1 className="text-5xl sm:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight">
-                Navigate India's
+                Navigate India&apos;s
                 <br />
                 <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1a56db] to-indigo-500">
                   Government
@@ -147,18 +196,40 @@ export default function LandingPage() {
               </p>
             </div>
 
-            <div className="flex flex-wrap gap-4">
-              <Link href="/signup"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1a56db] hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-sm">
-                Start for Free
-                <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                </svg>
-              </Link>
-              <Link href="/login"
-                className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-[#1a56db] text-slate-700 hover:text-[#1a56db] font-bold rounded-2xl transition-all text-sm hover:shadow-sm">
-                Sign In to Portal
-              </Link>
+            <div className="flex flex-wrap gap-4 min-h-[52px]">
+              {!loading && (
+                <>
+                  {user ? (
+                    <>
+                      <Link href={user.role === "admin" ? "/admin" : "/dashboard"}
+                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1a56db] hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-sm">
+                        Go to Dashboard
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Link>
+                      <button onClick={handleLogout}
+                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-red-600 text-slate-700 hover:text-red-600 font-bold rounded-2xl transition-all text-sm hover:shadow-sm">
+                        Logout
+                      </button>
+                    </>
+                  ) : (
+                    <>
+                      <Link href="/signup"
+                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1a56db] hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-sm">
+                        Start for Free
+                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                        </svg>
+                      </Link>
+                      <Link href="/login"
+                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-[#1a56db] text-slate-700 hover:text-[#1a56db] font-bold rounded-2xl transition-all text-sm hover:shadow-sm">
+                        Sign In to Portal
+                      </Link>
+                    </>
+                  )}
+                </>
+              )}
             </div>
 
             {/* Trust indicators */}
@@ -216,7 +287,7 @@ export default function LandingPage() {
                       </div>
                     </div>
                     <div className="bg-white border border-slate-200 text-slate-700 text-[10px] font-medium px-3 py-2 rounded-xl shadow-sm leading-relaxed">
-                      Visit myaadhaar.uidai.gov.in → click "Update Address" → upload address proof + OTP verification. Takes 2–3 days! ✓
+                      Visit myaadhaar.uidai.gov.in → click &quot;Update Address&quot; → upload address proof + OTP verification. Takes 2–3 days! ✓
                     </div>
                   </div>
                 </div>
@@ -306,7 +377,7 @@ export default function LandingPage() {
 
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
             {services.map((s) => (
-              <Link href="/login" key={s.name}
+              <Link href={user ? (user.role === "admin" ? "/admin" : "/dashboard/tracker") : "/login"} key={s.name}
                 className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-[#1a56db]/40 hover:shadow-md transition-all text-center hover:-translate-y-0.5">
                 <div className="text-3xl mb-3">{s.icon}</div>
                 <p className="font-bold text-slate-900 text-sm">{s.name}</p>
@@ -365,18 +436,40 @@ export default function LandingPage() {
           <p className="text-blue-200 mb-8 text-lg">
             Join 2.4 million+ citizens who use BureauAI to cut through red tape.
           </p>
-          <div className="flex flex-wrap justify-center gap-4">
-            <Link href="/signup"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1a56db] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-lg text-sm hover:-translate-y-0.5">
-              Create Free Account
-              <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-              </svg>
-            </Link>
-            <Link href="/login"
-              className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/20 text-sm">
-              Sign In
-            </Link>
+          <div className="flex flex-wrap justify-center gap-4 min-h-[56px]">
+            {!loading && (
+              <>
+                {user ? (
+                  <>
+                    <Link href={user.role === "admin" ? "/admin" : "/dashboard"}
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1a56db] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-lg text-sm hover:-translate-y-0.5">
+                      Go to Dashboard
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                    <button onClick={handleLogout}
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/20 text-sm">
+                      Logout
+                    </button>
+                  </>
+                ) : (
+                  <>
+                    <Link href="/signup"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1a56db] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-lg text-sm hover:-translate-y-0.5">
+                      Create Free Account
+                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
+                      </svg>
+                    </Link>
+                    <Link href="/login"
+                      className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/20 text-sm">
+                      Sign In
+                    </Link>
+                  </>
+                )}
+              </>
+            )}
           </div>
           <p className="mt-6 text-blue-300 text-xs">
             No credit card required · Free forever for citizens · Secured by SSL

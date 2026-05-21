@@ -8,7 +8,7 @@ export default function ThemeToggle() {
   const [mounted, setMounted] = useState(false);
 
   useEffect(() => {
-    setMounted(true);
+    setTimeout(() => setMounted(true), 0);
     // Always enforce light mode — remove any dark class
     document.documentElement.classList.remove("dark");
     localStorage.removeItem("theme");

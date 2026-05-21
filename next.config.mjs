@@ -3,7 +3,7 @@ const nextConfig = {
   reactCompiler: true,
   // Suppress the middleware->proxy deprecation warning (root middleware.js is correct for App Router)
   experimental: {
-    middlewarePrefetch: "flexible",
+    proxyPrefetch: "flexible",
   },
   images: {
     remotePatterns: [

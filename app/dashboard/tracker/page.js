@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useEffect, useRef, useCallback } from "react";
+import { createPortal } from "react-dom";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -127,7 +128,7 @@ function AppSearchDropdown({ value, onChange, onDepartmentChange }) {
               <Sparkles className="w-3.5 h-3.5 text-amber-500" />
             </div>
             <div>
-              <p className="text-xs font-bold text-slate-800">I don't know my department</p>
+              <p className="text-xs font-bold text-slate-800">I don&apos;t know my department</p>
               <p className="text-[10px] text-slate-400">AI will suggest the right authority for you</p>
             </div>
           </div>
@@ -223,17 +224,22 @@ function DepartmentField({ value, onChange, isAutoFilled, onEditToggle, editMode
 function AISuggester({ appName, onSuggest }) {
   const [loading, setLoading] = useState(false);
   const [suggestion, setSuggestion] = useState(null);
+  const [customDesc, setCustomDesc] = useState("");
 
   const askAI = async () => {
     setLoading(true);
     setSuggestion(null);
     try {
+      const queryText = appName === "I don't know my department" && customDesc.trim()
+        ? customDesc.trim()
+        : appName;
+
       const res = await fetch(`${API}/api/ai/chat`, {
         method: "POST",
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
-          message: `For a government application titled "${appName}", what is the correct issuing authority or department in India? Reply with ONLY the department name, nothing else.`,
+          message: `For a government application titled or described as "${queryText}", what is the correct issuing authority or department in India? Reply with ONLY the department name, nothing else.`,
         }),
       });
       const data = await res.json();
@@ -248,6 +254,8 @@ function AISuggester({ appName, onSuggest }) {
     }
   };
 
+  const isCustom = appName === "I don't know my department";
+
   return (
     <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-100">
       <div className="flex items-start gap-2.5">
@@ -257,17 +265,30 @@ function AISuggester({ appName, onSuggest }) {
         <div className="flex-1 min-w-0">
           <p className="text-xs font-bold text-amber-800">AI Department Finder</p>
           <p className="text-[10px] text-amber-600 mt-0.5">
-            {appName && appName !== "I don't know my department"
+            {appName && !isCustom
               ? `Tell me the right authority for "${appName}"`
               : "Describe your application and AI will find the right department"}
           </p>
+
+          {isCustom && !suggestion && (
+            <div className="mt-2">
+              <textarea
+                value={customDesc}
+                onChange={(e) => setCustomDesc(e.target.value)}
+                placeholder="e.g. Applying for old age pension scheme in Mumbai, Maharashtra"
+                className="w-full p-2.5 text-xs text-slate-800 bg-white border border-amber-200 rounded-lg outline-none focus:ring-1 focus:ring-amber-500 placeholder-slate-400 font-medium"
+                rows={2}
+              />
+            </div>
+          )}
+
           {suggestion && (
             <div className="mt-2 p-2.5 bg-white rounded-lg border border-amber-200">
               <p className="text-[10px] text-slate-500 font-semibold uppercase tracking-wide mb-1">Suggested Department</p>
               <p className="text-xs font-bold text-slate-800">{suggestion}</p>
               <button
                 type="button"
-                onClick={() => onSuggest(suggestion)}
+                onClick={() => onSuggest(suggestion, customDesc)}
                 className="mt-2 text-[10px] font-bold text-[#1a56db] hover:underline flex items-center gap-1"
               >
                 <CheckCircle2 className="w-3 h-3" /> Use this suggestion
@@ -278,8 +299,8 @@ function AISuggester({ appName, onSuggest }) {
             <button
               type="button"
               onClick={askAI}
-              disabled={loading}
-              className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded-lg transition-all disabled:opacity-60"
+              disabled={loading || (isCustom && !customDesc.trim())}
+              className="mt-2 flex items-center gap-1.5 px-3 py-1.5 bg-amber-500 hover:bg-amber-600 text-white text-[10px] font-bold rounded-lg transition-all disabled:opacity-60 disabled:cursor-not-allowed"
             >
               {loading ? <Loader2 className="w-3 h-3 animate-spin" /> : <Sparkles className="w-3 h-3" />}
               {loading ? "Finding..." : "Ask AI"}
@@ -302,8 +323,7 @@ export default function TrackerPage() {
   const [deptEditMode, setDeptEditMode] = useState(false);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
-
-  useEffect(() => { fetchTrackers(); }, []);
+  const [mounted, setMounted] = useState(false);
 
   async function fetchTrackers() {
     try {
@@ -317,6 +337,14 @@ export default function TrackerPage() {
       console.error("Failed to load trackers:", err);
     }
   }
+
+  useEffect(() => {
+    const t = setTimeout(() => setMounted(true), 0);
+    setTimeout(() => {
+      fetchTrackers();
+    }, 0);
+    return () => clearTimeout(t);
+  }, []);
 
   const resetForm = () => {
     setTitle(""); setDepartment(""); setIsAutoFilled(false);
@@ -404,8 +432,8 @@ export default function TrackerPage() {
       </div>
 
       {/* ── New Tracker Modal ── */}
-      {newTrackerOpen && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
+      {mounted && newTrackerOpen && createPortal(
+        <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-slate-950/60 backdrop-blur-sm">
           <div className="w-full max-w-lg bg-white rounded-2xl shadow-2xl border border-slate-200 overflow-hidden animate-fade-in">
 
             {/* Modal Header */}
@@ -431,7 +459,7 @@ export default function TrackerPage() {
             <div className="mx-5 mt-4 p-3 rounded-xl bg-blue-50 border border-blue-100 flex items-start gap-2.5">
               <Info className="w-3.5 h-3.5 text-[#1a56db] shrink-0 mt-0.5" />
               <p className="text-[10px] text-slate-600 leading-relaxed">
-                <span className="font-bold text-slate-800">First time?</span> Just search for what you're applying for — we'll automatically fill in the right government department for you.
+                <span className="font-bold text-slate-800">First time?</span> Just search for what you&apos;re applying for — we&apos;ll automatically fill in the right government department for you.
               </p>
             </div>
 
@@ -458,7 +486,16 @@ export default function TrackerPage() {
               {showAISuggester && (
                 <AISuggester
                   appName={title}
-                  onSuggest={(dept) => { setDepartment(dept); setIsAutoFilled(true); setDeptEditMode(false); }}
+                  onSuggest={(dept, desc) => {
+                    setDepartment(dept);
+                    setIsAutoFilled(true);
+                    setDeptEditMode(false);
+                    if (desc && desc.trim()) {
+                      setTitle(desc.trim());
+                    } else if (title === "I don't know my department") {
+                      setTitle(`${dept} Application`);
+                    }
+                  }}
                 />
               )}
 
@@ -487,7 +524,8 @@ export default function TrackerPage() {
               </div>
             </form>
           </div>
-        </div>
+        </div>,
+        document.body
       )}
 
       {/* ── Tracker List + Detail ── */}

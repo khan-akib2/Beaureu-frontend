@@ -24,11 +24,6 @@ export default function DocumentUploadPage() {
   const [selectedDoc, setSelectedDoc] = useState(null);
   const [error, setError] = useState("");
 
-  // Load existing user documents on mount
-  useEffect(() => {
-    fetchDocuments();
-  }, []);
-
   async function fetchDocuments() {
     try {
       const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, { credentials: "include" });
@@ -43,6 +38,13 @@ export default function DocumentUploadPage() {
       console.error("Failed to load documents:", err);
     }
   }
+
+  // Load existing user documents on mount
+  useEffect(() => {
+    setTimeout(() => {
+      fetchDocuments();
+    }, 0);
+  }, []);
 
   // Handle drag events
   const handleDrag = (e) => {
@@ -111,17 +113,13 @@ export default function DocumentUploadPage() {
     }, 150);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, { credentials: "include", 
+      const formData = new FormData();
+      formData.append("file", file);
+
+      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, {
+        credentials: "include", 
         method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          fileName: file.name,
-          fileSize: file.size,
-          fileType: file.type,
-          fileUrl: file.type.startsWith("image/") 
-            ? "https://images.unsplash.com/photo-1586075010923-2dd4570fb338?auto=format&fit=crop&w=600&q=80"
-            : "https://images.unsplash.com/photo-1568667256549-094345857637?auto=format&fit=crop&w=600&q=80"
-        })
+        body: formData
       });
 
       clearInterval(timer);
@@ -173,7 +171,7 @@ export default function DocumentUploadPage() {
           <Card className="bg-white" hover={false}>
             <CardHeader>
               <CardTitle className="text-sm">Upload Filing Scan</CardTitle>
-              <CardDescription className="text-xs">Drag PDF or JPEG files (max 10MB)</CardDescription>
+              <CardDescription className="text-xs">Drag PDF or JPEG files (max 10MB) · Analyzed by <span className="font-bold text-[#1a56db]">Groq AI</span></CardDescription>
             </CardHeader>
             <CardContent className="space-y-4">
               
@@ -237,7 +235,7 @@ export default function DocumentUploadPage() {
                   {uploading && (
                     <div className="space-y-1.5">
                       <div className="flex justify-between text-[10px] font-bold text-slate-400">
-                        <span>AI Document analysis...</span>
+                        <span>Groq analyzing document...</span>
                         <span>{uploadProgress}%</span>
                       </div>
                       <div className="w-full h-1 bg-slate-200 rounded-full overflow-hidden">
@@ -254,7 +252,7 @@ export default function DocumentUploadPage() {
                     className="w-full justify-center bg-blue-700 hover:bg-blue-800 text-white font-bold"
                     isLoading={uploading}
                   >
-                    Analyze with Gemini
+                    Analyze with Groq
                   </Button>
                 </div>
               )}
@@ -352,7 +350,9 @@ export default function DocumentUploadPage() {
                   <div className="flex items-center justify-between">
                     <div>
                       <CardTitle className="text-sm">Compliance Report</CardTitle>
-                      <CardDescription className="text-xs">Extraction checklist details</CardDescription>
+                      <CardDescription className="text-xs flex items-center gap-1">
+                        Powered by <span className="font-bold text-[#1a56db]">Groq · llama-3.3-70b</span>
+                      </CardDescription>
                     </div>
                     <Badge variant={selectedDoc.status === "verified" ? "success" : "warning"}>
                       {selectedDoc.status.toUpperCase()}
@@ -361,6 +361,24 @@ export default function DocumentUploadPage() {
                 </CardHeader>
                 <CardContent className="space-y-5">
                   
+                  {/* Document type + authority */}
+                  {(selectedDoc.documentType || selectedDoc.issuingAuthority) && (
+                    <div className="grid grid-cols-2 gap-2">
+                      {selectedDoc.documentType && (
+                        <div className="p-2.5 rounded-xl bg-blue-50 border border-blue-100">
+                          <p className="text-[9px] font-bold text-blue-400 uppercase tracking-wider">Document Type</p>
+                          <p className="text-xs font-bold text-blue-800 mt-0.5">{selectedDoc.documentType}</p>
+                        </div>
+                      )}
+                      {selectedDoc.issuingAuthority && (
+                        <div className="p-2.5 rounded-xl bg-slate-50 border border-slate-200">
+                          <p className="text-[9px] font-bold text-slate-400 uppercase tracking-wider">Issuing Authority</p>
+                          <p className="text-xs font-bold text-slate-700 mt-0.5 leading-tight">{selectedDoc.issuingAuthority}</p>
+                        </div>
+                      )}
+                    </div>
+                  )}
+
                   {/* Summary */}
                   <div>
                     <h4 className="text-[10px] font-bold text-slate-400 uppercase tracking-wide">Extracted Summary</h4>

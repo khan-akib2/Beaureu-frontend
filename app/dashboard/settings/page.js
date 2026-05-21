@@ -8,12 +8,13 @@ import Input from "@/components/ui/Input";
 import {
   User, Bell, Globe, Shield, CheckCircle, AlertCircle, Lock, Mail, Phone, Camera, Upload
 } from "lucide-react";
+import { TRANSLATIONS } from "../../../lib/translations";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 const FETCH_OPTS = { credentials: "include" };
 
 export default function SettingsPage() {
-  const { user, setUser } = useUser();
+  const { user, setUser, language, setLanguage } = useUser();
 
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
@@ -30,18 +31,28 @@ export default function SettingsPage() {
   const [appNotifs, setAppNotifs] = useState(true);
   const [statusUpdates, setStatusUpdates] = useState(true);
 
-  const [language, setLanguage] = useState("en");
+  const [selectedLanguage, setSelectedLanguage] = useState("en");
 
   const [loading, setLoading] = useState(false);
   const [pwLoading, setPwLoading] = useState(false);
   const [statusMessage, setStatusMessage] = useState("");
   const [statusType, setStatusType] = useState("success");
 
+  const t = (key) => TRANSLATIONS[language]?.[key] || TRANSLATIONS["en"]?.[key] || key;
+
+  useEffect(() => {
+    if (language) {
+      setTimeout(() => setSelectedLanguage(language), 0);
+    }
+  }, [language]);
+
   useEffect(() => {
     if (user) {
-      setName(user.name || "");
-      setEmail(user.email || "");
-      setPhone(user.phone || "");
+      setTimeout(() => {
+        setName(user.name || "");
+        setEmail(user.email || "");
+        setPhone(user.phone || "");
+      }, 0);
     }
   }, [user]);
 
@@ -129,15 +140,38 @@ export default function SettingsPage() {
   };
 
   const handleNotifSave = () => showStatus("Notification preferences saved. ✓");
-  const handleLanguageSave = () => showStatus(`Language set to ${["English","हिन्दी","मराठी","اردو"][["en","hi","mr","ur"].indexOf(language)]}. ✓`);
+  
+  const handleLanguageSave = async () => {
+    setLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/me`, {
+        method: "PATCH",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ language: selectedLanguage }),
+        ...FETCH_OPTS,
+      });
+      if (res.ok) {
+        setLanguage(selectedLanguage);
+        showStatus("Language preference saved in profile! ✓");
+      } else {
+        setLanguage(selectedLanguage);
+        showStatus("Language applied locally. ✓");
+      }
+    } catch {
+      setLanguage(selectedLanguage);
+      showStatus("Language applied locally. ✓");
+    } finally {
+      setLoading(false);
+    }
+  };
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
 
       {/* Page Header */}
       <div className="pb-4 border-b border-slate-200">
-        <h1 className="text-xl font-bold text-slate-900 tracking-tight">Account Settings</h1>
-        <p className="mt-1 text-xs text-slate-400 font-medium">Manage your profile, security, and notification preferences.</p>
+        <h1 className="text-xl font-bold text-slate-900 tracking-tight">{t("account_settings")}</h1>
+        <p className="mt-1 text-xs text-slate-400 font-medium">{t("account_settings_sub")}</p>
       </div>
 
       {/* Status Toast */}
@@ -166,8 +200,8 @@ export default function SettingsPage() {
                 <User className="w-4 h-4" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold text-slate-900">Profile Details</CardTitle>
-                <CardDescription className="text-xs">Update your personal information</CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900">{t("profile_details")}</CardTitle>
+                <CardDescription className="text-xs">{t("profile_sub")}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-5">
@@ -221,12 +255,12 @@ export default function SettingsPage() {
                 </div>
 
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="Full Name" id="profile-name" value={name} onChange={(e) => setName(e.target.value)} required />
-                  <Input label="Email Address" id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
+                  <Input label={t("full_name")} id="profile-name" value={name} onChange={(e) => setName(e.target.value)} required />
+                  <Input label={t("email_address")} id="profile-email" type="email" value={email} onChange={(e) => setEmail(e.target.value)} required />
                 </div>
 
                 <Input
-                  label="Phone Number"
+                  label={t("phone_number")}
                   id="profile-phone"
                   type="tel"
                   placeholder="+91 98765 43210"
@@ -239,7 +273,7 @@ export default function SettingsPage() {
                   isLoading={loading}
                   className="bg-[#1a56db] hover:bg-blue-700 text-white font-bold px-6 py-2.5 rounded-xl text-xs shadow-sm shadow-blue-500/20"
                 >
-                  Save Profile Changes
+                  {t("save_profile")}
                 </Button>
               </form>
             </CardContent>
@@ -252,15 +286,15 @@ export default function SettingsPage() {
                 <Lock className="w-4 h-4" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold text-slate-900">Account Security</CardTitle>
-                <CardDescription className="text-xs">Change your account password</CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900">{t("account_security")}</CardTitle>
+                <CardDescription className="text-xs">{t("security_sub")}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-5">
               <form onSubmit={handlePasswordSubmit} className="space-y-4">
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-                  <Input label="New Password" id="new-password" type="password" placeholder="Enter new password" value={password} onChange={(e) => setPassword(e.target.value)} />
-                  <Input label="Confirm New Password" id="confirm-password" type="password" placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
+                  <Input label={t("new_password")} id="new-password" type="password" placeholder="Enter new password" value={password} onChange={(e) => setPassword(e.target.value)} />
+                  <Input label={t("confirm_password")} id="confirm-password" type="password" placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                 </div>
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-100 text-[10px] text-amber-700 font-semibold">
                   🔒 Use at least 8 characters with uppercase, lowercase, numbers, and special characters.
@@ -271,7 +305,7 @@ export default function SettingsPage() {
                   variant="outline"
                   className="border border-slate-200 text-slate-700 hover:bg-slate-50 font-bold px-6 py-2.5 rounded-xl text-xs"
                 >
-                  Update Password
+                  {t("update_password")}
                 </Button>
               </form>
             </CardContent>
@@ -289,8 +323,8 @@ export default function SettingsPage() {
                 <Bell className="w-4 h-4" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold text-slate-900">Notifications</CardTitle>
-                <CardDescription className="text-xs">Manage alert preferences</CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900">{t("notification_pref")}</CardTitle>
+                <CardDescription className="text-xs">{t("notification_sub")}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
@@ -325,7 +359,7 @@ export default function SettingsPage() {
                 onClick={handleNotifSave}
                 className="w-full mt-2 py-2.5 px-4 rounded-xl border border-[#1a56db] text-[#1a56db] hover:bg-blue-50 text-xs font-bold transition-colors"
               >
-                Save Preferences
+                {t("save_preferences")}
               </button>
             </CardContent>
           </Card>
@@ -337,8 +371,8 @@ export default function SettingsPage() {
                 <Globe className="w-4 h-4" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold text-slate-900">Language</CardTitle>
-                <CardDescription className="text-xs">Portal display language</CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900">{t("language_pref")}</CardTitle>
+                <CardDescription className="text-xs">{t("language_sub")}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
@@ -352,9 +386,9 @@ export default function SettingsPage() {
                   <button
                     key={lang.code}
                     type="button"
-                    onClick={() => setLanguage(lang.code)}
+                    onClick={() => setSelectedLanguage(lang.code)}
                     className={`py-2.5 px-3 rounded-xl text-xs font-bold border transition-all ${
-                      language === lang.code
+                      selectedLanguage === lang.code
                         ? "bg-[#1a56db] text-white border-[#1a56db] shadow-sm"
                         : "bg-white text-slate-700 border-slate-200 hover:border-[#1a56db] hover:text-[#1a56db]"
                     }`}
@@ -368,7 +402,7 @@ export default function SettingsPage() {
                 onClick={handleLanguageSave}
                 className="w-full py-2.5 px-4 rounded-xl bg-slate-50 border border-slate-200 text-slate-700 hover:bg-slate-100 text-xs font-bold transition-colors"
               >
-                Apply Language
+                {t("apply_language")}
               </button>
             </CardContent>
           </Card>
@@ -380,13 +414,13 @@ export default function SettingsPage() {
                 <Shield className="w-4 h-4" />
               </div>
               <div>
-                <CardTitle className="text-sm font-bold text-slate-900">Account Status</CardTitle>
-                <CardDescription className="text-xs">Identity verification details</CardDescription>
+                <CardTitle className="text-sm font-bold text-slate-900">{t("account_status")}</CardTitle>
+                <CardDescription className="text-xs">{t("account_status_sub")}</CardDescription>
               </div>
             </CardHeader>
             <CardContent className="pt-4 space-y-3">
               {[
-                { label: "Email Verified", value: "✓ Verified", color: "bg-emerald-50 text-emerald-700 border-emerald-100" },
+                { label: "Email Verified", value: user?.isVerified ? "✓ Verified" : "Pending", color: user?.isVerified ? "bg-emerald-50 text-emerald-700 border-emerald-100" : "bg-amber-50 text-amber-600 border-amber-100" },
                 { label: "Aadhaar Linked", value: "Pending", color: "bg-amber-50 text-amber-600 border-amber-100" },
                 { label: "DigiLocker Access", value: "Not Linked", color: "bg-slate-100 text-slate-500 border-slate-200" },
                 { label: "Account Type", value: user?.role === "admin" ? "Admin" : "Citizen", color: "bg-blue-50 text-[#1a56db] border-blue-100" },
