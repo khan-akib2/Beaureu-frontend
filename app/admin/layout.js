@@ -67,7 +67,7 @@ export default function AdminLayout({ children }) {
     { name: "Applications", path: "/admin?tab=applications", icon: FileText, hasSub: true },
     { name: "Reports & Analytics", path: "/admin?tab=analytics", icon: BarChart3 },
     { name: "Notifications", path: "/admin?tab=notifications", icon: Bell },
-    { name: "System Settings", path: "/admin?tab=settings", icon: Settings },
+    ...(admin?.email === "bureauai@gmail.com" ? [{ name: "System Settings", path: "/admin?tab=settings", icon: Settings }] : []),
     { name: "Audit Logs", path: "/admin?tab=audit", icon: ListTodo },
   ];
 

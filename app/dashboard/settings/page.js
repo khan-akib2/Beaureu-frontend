@@ -203,9 +203,8 @@ export default function SettingsPage() {
     if (!password) { showStatus("Please enter a new password.", "error"); return; }
     if (password !== confirmPassword) { showStatus("Passwords do not match.", "error"); return; }
     
-    const passwordRegex = /^(?=.*[a-z])(?=.*[A-Z])(?=.*\d)(?=.*[!@#$%^&*(),.?":{}|<>]).{8,}$/;
-    if (!passwordRegex.test(password)) {
-      showStatus("Password must contain at least 8 characters, including uppercase, lowercase, numbers, and special characters.", "error");
+    if (password.length < 8) {
+      showStatus("Password must be at least 8 characters.", "error");
       return;
     }
 
@@ -219,9 +218,9 @@ export default function SettingsPage() {
       });
       if (res.ok) {
         setPassword(""); setConfirmPassword("");
-        showStatus("Password updated successfully! ✓");
+        showStatus("Password updated successfully.");
       } else {
-        const errData = await res.json();
+        const errData = await res.json().catch(() => ({}));
         showStatus(errData.error || "Failed to update password.", "error");
       }
     } catch {
@@ -702,7 +701,7 @@ export default function SettingsPage() {
                   <Input label={t("confirm_password")} id="confirm-password" type="password" placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                 </div>
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-100 text-[10px] text-amber-700 font-semibold">
-                  🔒 Use at least 8 characters with uppercase, lowercase, numbers, and special characters.
+                  Password must be at least 8 characters.
                 </div>
                 <Button
                   type="submit"
