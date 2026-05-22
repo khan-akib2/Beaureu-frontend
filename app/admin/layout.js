@@ -1,5 +1,7 @@
 "use client";
 
+export const dynamic = "force-dynamic";
+
 import React, { useState, useEffect, createContext, useContext } from "react";
 import Link from "next/link";
 import { usePathname, useRouter, useSearchParams } from "next/navigation";
@@ -19,7 +21,8 @@ import {
   Calendar,
   Download,
   Menu,
-  X
+  X,
+  Search
 } from "lucide-react";
 
 const AdminContext = createContext(null);
@@ -28,8 +31,6 @@ export const useAdmin = () => useContext(AdminContext);
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
-  const searchParams = useSearchParams();
-  const currentTab = searchParams.get("tab");
   const [admin, setAdmin] = useState(null);
   const [loading, setLoading] = useState(true);
   const [mobileOpen, setMobileOpen] = useState(false);
@@ -41,7 +42,7 @@ export default function AdminLayout({ children }) {
         if (!res.ok) { router.push("/login"); return; }
         const data = await res.json();
         if (data.user?.role !== "admin") {
-          router.replace("/dashboard");
+          setAdmin(data.user || { role: "user" });
           return;
         }
         setAdmin(data.user);
@@ -62,11 +63,9 @@ export default function AdminLayout({ children }) {
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: Home },
-    { name: "Users", path: "/admin?tab=users", icon: Users, hasSub: true },
+    ...(admin?.email === "bureauai@gmail.com" ? [{ name: "Users", path: "/admin?tab=users", icon: Users, hasSub: true }] : []),
     { name: "Applications", path: "/admin?tab=applications", icon: FileText, hasSub: true },
-    { name: "Services", path: "/admin?tab=services", icon: Grid },
     { name: "Reports & Analytics", path: "/admin?tab=analytics", icon: BarChart3 },
-    { name: "CMS Management", path: "/admin?tab=cms", icon: FileCode },
     { name: "Notifications", path: "/admin?tab=notifications", icon: Bell },
     { name: "System Settings", path: "/admin?tab=settings", icon: Settings },
     { name: "Audit Logs", path: "/admin?tab=audit", icon: ListTodo },
@@ -114,57 +113,53 @@ export default function AdminLayout({ children }) {
 
   return (
     <AdminContext.Provider value={{ admin }}>
-      <div className="h-screen flex overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
+      <div className="h-screen flex flex-col overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
+        
+        {/* Tricolor National Governance Stripe */}
+        <div className="shrink-0 h-[3px] w-full flex">
+          <div className="flex-1 bg-[#d97706]"></div> {/* Saffron */}
+          <div className="flex-1 bg-white"></div> {/* White */}
+          <div className="flex-1 bg-[#059669]"></div> {/* Green */}
+        </div>
 
-        {/* Sidebar Desktop */}
-        <aside className="hidden lg:flex lg:flex-col w-64 shrink-0 bg-[#0a192f] overflow-hidden">
-          <SidebarContent pathname={pathname} handleLogout={handleLogout} adminLinks={adminLinks} currentTab={currentTab} />
-        </aside>
+        <div className="flex-1 flex overflow-hidden">
+          {/* Sidebar Desktop */}
+          <aside className="hidden lg:flex lg:flex-col w-64 shrink-0 bg-[#0a192f] overflow-hidden border-r border-slate-800/40">
+            <React.Suspense fallback={<div className="h-full bg-[#0a192f]" />}>
+              <SidebarContent pathname={pathname} handleLogout={handleLogout} adminLinks={adminLinks} />
+            </React.Suspense>
+          </aside>
 
-        {/* Mobile Drawer */}
-        {mobileOpen && (
-          <div className="lg:hidden fixed inset-0 z-50 flex">
-            <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setMobileOpen(false)} />
-            <aside className="relative flex flex-col w-64 bg-[#0a192f] z-50 animate-slide-in">
-              <SidebarContent pathname={pathname} handleLogout={handleLogout} adminLinks={adminLinks} currentTab={currentTab} />
-            </aside>
-          </div>
-        )}
+          {/* Mobile Drawer */}
+          {mobileOpen && (
+            <div className="lg:hidden fixed inset-0 z-50 flex">
+              <div className="fixed inset-0 bg-slate-900/60 backdrop-blur-xs" onClick={() => setMobileOpen(false)} />
+              <aside className="relative flex flex-col w-64 bg-[#0a192f] z-50 animate-slide-in">
+                <React.Suspense fallback={<div className="h-full bg-[#0a192f]" />}>
+                  <SidebarContent pathname={pathname} handleLogout={handleLogout} adminLinks={adminLinks} />
+                </React.Suspense>
+              </aside>
+            </div>
+          )}
 
-        {/* Main Content Workspace */}
-        <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
-          
-          {/* Header */}
-          <header className="shrink-0 bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between z-20">
-            <div className="flex items-center gap-3">
-              <button 
-                onClick={() => setMobileOpen(true)}
-                className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
-              >
-                <Menu className="w-5 h-5" />
-              </button>
-              <div>
-                <h2 className="text-lg font-bold text-slate-900 font-sans tracking-tight">Admin Dashboard</h2>
-                <p className="text-xs text-slate-400 font-medium font-sans mt-0.5">Welcome back, Administrator</p>
+          {/* Main Content Workspace */}
+          <div className="flex-1 flex flex-col min-w-0 overflow-hidden">
+            
+            {/* Header */}
+            <header className="shrink-0 bg-white border-b border-slate-200/80 px-6 py-4 flex items-center justify-between z-20 shadow-xs">
+              <div className="flex items-center gap-4">
+                <button 
+                  onClick={() => setMobileOpen(true)}
+                  className="lg:hidden p-2 rounded-xl text-slate-500 hover:bg-slate-100 transition-colors"
+                >
+                  <Menu className="w-5 h-5" />
+                </button>
+                <div className="hidden lg:block">
+                  <h2 className="text-base font-extrabold text-slate-900 font-sans tracking-tight">Admin Dashboard</h2>
+                  <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">BureauAI Ops Control</p>
+                </div>
               </div>
-            </div>
-
-            {/* Right Action buttons */}
-            <div className="flex items-center gap-3">
-              <button className="flex items-center gap-2 px-4 py-2 bg-white border border-slate-200 rounded-xl text-xs font-bold text-slate-650 hover:bg-slate-50 transition-all font-sans">
-                <Calendar className="w-4 h-4 text-slate-400" />
-                <span>12 May 2024 - 18 May 2024</span>
-              </button>
-              
-              <button 
-                onClick={() => window.print()}
-                className="flex items-center gap-2 px-4 py-2 bg-[#0a192f] hover:bg-[#0b1b36] text-white rounded-xl text-xs font-bold transition-all font-sans"
-              >
-                <Download className="w-4 h-4" />
-                <span>Export Report</span>
-              </button>
-            </div>
-          </header>
+            </header>
 
           {/* Page content view */}
           <main className="flex-1 overflow-y-auto p-6">
@@ -172,32 +167,32 @@ export default function AdminLayout({ children }) {
               {children}
             </div>
           </main>
-
         </div>
       </div>
+    </div>
     </AdminContext.Provider>
   );
 }
 
-function SidebarContent({ pathname, handleLogout, adminLinks, currentTab }) {
+function SidebarContent({ pathname, handleLogout, adminLinks }) {
+  const searchParams = useSearchParams();
+  const currentTab = searchParams ? searchParams.get("tab") : null;
   return (
     <div className="flex flex-col h-full bg-[#0a192f] text-slate-300 font-sans select-none justify-between overflow-hidden">
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* Emblem & Logo Header */}
-        <div className="px-6 py-5 border-b border-slate-800 flex items-center gap-3">
-          <div className="w-10 h-10 flex-shrink-0 flex items-center justify-center bg-white/10 rounded-lg p-1.5 border border-white/5">
+        <div className="px-6 py-5 border-b border-slate-800/60 flex items-center gap-3 bg-slate-950/20">
+          <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-amber-500/15 via-white/5 to-emerald-500/15 rounded-xl p-1.5 border border-white/10 shadow-inner">
             <svg className="w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <path d="M12 2v4M9 3v3M15 3v3" />
-              <path d="M8 6h8v2H8z" strokeLinecap="round" />
-              <path d="M10 8v5M14 8v5" />
-              <circle cx="12" cy="15" r="2.5" />
-              <path d="M7 13h10v2a5 5 0 01-10 0v-2z" />
-              <path d="M9 19v2M15 19v2M12 18v4" />
+              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1" opacity="0.3" />
+              <circle cx="12" cy="12" r="3" stroke="#3b82f6" strokeWidth="1.5" />
+              <path d="M12 2v20M2 12h20" stroke="white" strokeWidth="0.8" opacity="0.2" />
+              <path d="M12 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="white" opacity="0.5" />
             </svg>
           </div>
           <div>
-            <div className="font-bold text-white text-sm leading-tight">Bharat Sarkar</div>
-            <p className="text-[10px] text-slate-400 font-medium leading-none mt-0.5">Admin Portal</p>
+            <div className="font-black text-white text-sm tracking-wider leading-none">BUREAU<span className="text-[#1a56db]">AI</span></div>
+            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Govt of India</p>
           </div>
         </div>
 

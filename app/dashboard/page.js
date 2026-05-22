@@ -7,19 +7,36 @@ import {
   Folder, Clock, CheckCircle2, AlertCircle, FileText, CreditCard,
   Compass, ArrowRight, Headphones, Sparkles, ChevronRight, Send,
   Loader2, TrendingUp, Shield, Zap, Globe, Calendar, Activity,
-  MessageSquarePlus, FileCheck, Download, Building2, Users, Star
+  MessageSquarePlus, FileCheck, Download, Building2, Users, Star,
+  Copy, Check
 } from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
 export default function DashboardHome() {
-  const { user } = useUser();
+  const { user, language } = useUser();
   const [stats, setStats] = useState({ total: 0, progress: 0, approved: 0, action: 0 });
   const [recentApps, setRecentApps] = useState([]);
   const [chatInput, setChatInput] = useState("");
+  const [submittedQuery, setSubmittedQuery] = useState("");
   const [chatResponse, setChatResponse] = useState(null);
   const [chatLoading, setChatLoading] = useState(false);
   const [statsLoaded, setStatsLoaded] = useState(false);
+  const [copiedUser, setCopiedUser] = useState(false);
+  const [copiedAI, setCopiedAI] = useState(false);
+
+  const handleCopy = (text, type) => {
+    if (typeof window === "undefined" || !navigator.clipboard) return;
+    navigator.clipboard.writeText(text).then(() => {
+      if (type === "user") {
+        setCopiedUser(true);
+        setTimeout(() => setCopiedUser(false), 2000);
+      } else {
+        setCopiedAI(true);
+        setTimeout(() => setCopiedAI(false), 2000);
+      }
+    });
+  };
 
   useEffect(() => {
     async function loadStats() {
@@ -58,6 +75,8 @@ export default function DashboardHome() {
   const handleAskAI = async (messageText) => {
     const text = messageText || chatInput;
     if (!text.trim()) return;
+    setSubmittedQuery(text);
+    setChatInput("");
     setChatLoading(true);
     setChatResponse(null);
     try {
@@ -65,7 +84,7 @@ export default function DashboardHome() {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ message: text }),
+        body: JSON.stringify({ message: text, language: language || "en" }),
       });
       const data = await res.json();
       setChatResponse(res.ok ? data.response : "Sorry, I could not process that. Please try again.");
@@ -355,28 +374,68 @@ export default function DashboardHome() {
             <div className="flex-1 p-5 flex flex-col gap-4 overflow-y-auto">
               {chatResponse ? (
                 <div className="space-y-4 animate-fade-in">
-                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
-                        <span className="text-[10px] font-bold text-slate-600">You</span>
+                  <div className="p-4 bg-slate-50 border border-slate-100 rounded-xl relative group">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center">
+                          <span className="text-[10px] font-bold text-slate-600">You</span>
+                        </div>
+                        <span className="text-xs font-semibold text-slate-500">Just now</span>
                       </div>
-                      <span className="text-xs font-semibold text-slate-500">Just now</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(submittedQuery, "user")}
+                        className="p-1 rounded text-slate-400 hover:text-[#1a56db] hover:bg-slate-100 transition-colors flex items-center gap-1 text-[9px] font-bold"
+                        title="Copy message to clipboard"
+                      >
+                        {copiedUser ? (
+                          <>
+                            <Check className="w-3 h-3 text-green-500 shrink-0" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 shrink-0" />
+                            Copy
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <p className="text-sm text-slate-700">{chatInput}</p>
+                    <p className="text-sm text-slate-700 leading-relaxed pr-8">{submittedQuery}</p>
                   </div>
-                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100 rounded-xl">
-                    <div className="flex items-center gap-2 mb-2">
-                      <div className="w-6 h-6 rounded-full bg-[#1a56db] flex items-center justify-center">
-                        <Sparkles className="w-3 h-3 text-white" />
+                  <div className="p-4 bg-gradient-to-br from-blue-50 to-blue-100/50 border border-blue-100 rounded-xl relative group">
+                    <div className="flex items-center justify-between mb-2">
+                      <div className="flex items-center gap-2">
+                        <div className="w-6 h-6 rounded-full bg-[#1a56db] flex items-center justify-center">
+                          <Sparkles className="w-3 h-3 text-white" />
+                        </div>
+                        <span className="text-xs font-semibold text-[#1a56db]">BureauAI</span>
                       </div>
-                      <span className="text-xs font-semibold text-[#1a56db]">BureauAI</span>
+                      <button
+                        type="button"
+                        onClick={() => handleCopy(chatResponse, "ai")}
+                        className="p-1 rounded text-blue-400 hover:text-[#1a56db] hover:bg-blue-50 transition-colors flex items-center gap-1 text-[9px] font-bold"
+                        title="Copy response to clipboard"
+                      >
+                        {copiedAI ? (
+                          <>
+                            <Check className="w-3 h-3 text-green-500 shrink-0" />
+                            Copied!
+                          </>
+                        ) : (
+                          <>
+                            <Copy className="w-3 h-3 shrink-0" />
+                            Copy
+                          </>
+                        )}
+                      </button>
                     </div>
-                    <p className="text-sm text-slate-700 leading-relaxed">
+                    <p className="text-sm text-slate-700 leading-relaxed pr-8">
                       {chatResponse.replace(/\*\*/g, "").replace(/###\s/g, "").substring(0, 400)}{chatResponse.length > 400 ? "..." : ""}
                     </p>
                   </div>
                   <div className="flex gap-3 pt-2">
-                    <button onClick={() => { setChatResponse(null); setChatInput(""); }} className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">Clear</button>
+                    <button onClick={() => { setChatResponse(null); setChatInput(""); setSubmittedQuery(""); }} className="text-xs font-medium text-slate-500 hover:text-slate-700 transition-colors">Clear</button>
                     <Link href="/dashboard/chat" className="text-xs font-semibold text-[#1a56db] hover:text-blue-700">Open full chat →</Link>
                   </div>
                 </div>

@@ -16,7 +16,8 @@ import {
   Search,
   ChevronDown,
   LogOut,
-  Settings
+  Settings,
+  Languages
 } from "lucide-react";
 
 import { TRANSLATIONS } from "../../lib/translations";
@@ -40,7 +41,7 @@ export default function DashboardLayout({ children }) {
 
   useEffect(() => {
     const stored = localStorage.getItem("bureau_language");
-    if (stored && ["en", "hi", "mr", "ur"].includes(stored)) {
+    if (stored && ["en", "hi", "mr", "ur", "bn"].includes(stored)) {
       setTimeout(() => setLanguageState(stored), 0);
     }
   }, []);
@@ -65,7 +66,7 @@ export default function DashboardLayout({ children }) {
         setUser(data.user);
         
         // Sync language state with user preference if present
-        if (data.user?.language && ["en", "hi", "mr", "ur"].includes(data.user.language)) {
+        if (data.user?.language && ["en", "hi", "mr", "ur", "bn"].includes(data.user.language)) {
           setLanguageState(data.user.language);
           localStorage.setItem("bureau_language", data.user.language);
         }
@@ -83,10 +84,40 @@ export default function DashboardLayout({ children }) {
     initSession();
   }, [router]);
 
+  useEffect(() => {
+    if (!user) return;
+    const interval = setInterval(async () => {
+      try {
+        const notifRes = await fetch(`${API}/api/notifications`, FETCH_OPTS);
+        if (notifRes.ok) {
+          const notifData = await notifRes.json();
+          setNotifications(notifData.notifications || []);
+        }
+      } catch (err) {
+        console.warn("Error polling notifications:", err.message || err);
+      }
+    }, 10000);
+    return () => clearInterval(interval);
+  }, [user]);
+
   const handleLogout = async () => {
     await fetch(`${API}/api/auth/logout`, { method: "POST", ...FETCH_OPTS });
     router.push("/login");
     router.refresh();
+  };
+
+  const handleMarkAsRead = async (notifId) => {
+    try {
+      setNotifications((prev) =>
+        prev.map((n) => (n._id === notifId ? { ...n, read: true } : n))
+      );
+      await fetch(`${API}/api/notifications/${notifId}`, {
+        method: "PATCH",
+        ...FETCH_OPTS,
+      });
+    } catch (err) {
+      console.error("Error marking notification as read:", err);
+    }
   };
 
   const navLinks = [
@@ -95,6 +126,7 @@ export default function DashboardLayout({ children }) {
     { name: t("nav_services"), path: "/dashboard/eligibility", icon: Grid },
     { name: t("nav_notifications"), path: "/dashboard/notifications", icon: Bell, badge: notifications.filter(n => !n.read).length || null },
     { name: t("nav_documents"), path: "/dashboard/upload", icon: FolderOpen },
+    { name: t("nav_translation") || "Translation Simplifier", path: "/dashboard/translate", icon: Languages },
     { name: t("nav_help_support"), path: "/dashboard/chat", icon: HelpCircle },
     { name: t("nav_profile"), path: "/dashboard/settings", icon: User },
   ];
@@ -201,12 +233,19 @@ export default function DashboardLayout({ children }) {
                         <p className="text-center py-8 text-xs text-slate-400">No notifications yet.</p>
                       ) : (
                         notifications.slice(0, 6).map((notif, i) => (
-                          <div key={notif._id || i} className="px-4 py-3 hover:bg-slate-50 transition-colors">
+                          <div 
+                            key={notif._id || i} 
+                            onClick={() => !notif.read && handleMarkAsRead(notif._id)}
+                            className={`px-4 py-3 hover:bg-slate-50 transition-colors cursor-pointer ${!notif.read ? "bg-blue-50/20 hover:bg-blue-50/40" : ""}`}
+                          >
                             <div className="flex items-center justify-between mb-0.5">
-                              <span className="text-xs font-bold text-slate-800">{notif.title}</span>
+                              <span className={`text-xs font-bold text-slate-800 ${!notif.read ? "text-[#1a56db]" : ""}`}>{notif.title}</span>
                               {!notif.read && <span className="w-1.5 h-1.5 rounded-full bg-[#1a56db] flex-shrink-0" />}
                             </div>
                             <p className="text-[10px] text-slate-500 leading-relaxed">{notif.message}</p>
+                            {!notif.read && (
+                              <span className="text-[8px] text-[#1a56db] font-bold mt-1 block">Click to mark as read</span>
+                            )}
                           </div>
                         ))
                       )}
