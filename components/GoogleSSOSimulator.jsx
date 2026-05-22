@@ -81,7 +81,7 @@ export default function GoogleSSOSimulator({ isOpen, onClose, onSimulate, isLoad
         {/* Content */}
         <div className="p-6 flex-1 space-y-6">
           <p className="text-slate-500 text-xs sm:text-sm leading-relaxed">
-            Since no Google Client ID is configured in <code className="px-1.5 py-0.5 bg-slate-100 text-slate-700 font-mono rounded">.env.local</code>, this simulator allows you to log in with <strong>any</strong> account dynamically.
+            Since your local origin is not registered for this Google Client ID, this simulator allows you to log in with <strong>any</strong> account dynamically.
           </p>
 
           {/* Quick Select Profiles */}

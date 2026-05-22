@@ -69,7 +69,8 @@ export default function SignupPage() {
   // Load Google Identity Services script on mount for synchronous prompt execution
   useEffect(() => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId && !window.google) {
+    const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    if (clientId && !isLocalhost && !window.google) {
       const script = document.createElement("script");
       script.src = "https://accounts.google.com/gsi/client";
       script.async = true;
@@ -200,7 +201,8 @@ export default function SignupPage() {
 
   const handleGoogleClick = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID;
-    if (clientId) {
+    const isLocalhost = typeof window !== "undefined" && (window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1");
+    if (clientId && !isLocalhost) {
       if (window.google) {
         initializeGoogleSSO(clientId);
       } else {
