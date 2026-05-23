@@ -4,6 +4,7 @@ const nextConfig = {
   // Suppress the middleware->proxy deprecation warning (root middleware.js is correct for App Router)
   experimental: {
     proxyPrefetch: "flexible",
+    workerThreads: false,
   },
   images: {
     remotePatterns: [

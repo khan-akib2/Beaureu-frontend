@@ -5,6 +5,7 @@ import {
   Bell, CheckCheck, Trash2, Info, AlertTriangle, CheckCircle2,
   Inbox, Filter, RefreshCw
 } from "lucide-react";
+import { useUser } from "../layout";
 
 const API = process.env.NEXT_PUBLIC_API_URL;
 
@@ -27,12 +28,14 @@ function timeAgo(dateStr) {
 }
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const { notifications, setNotifications } = useUser();
+  const [loading, setLoading] = useState(notifications.length === 0);
   const [filter, setFilter] = useState("all"); // all | unread | info | warning | success
   const [actionLoading, setActionLoading] = useState(false);
 
-  useEffect(() => { fetchNotifications(); }, []);
+  useEffect(() => {
+    fetchNotifications();
+  }, []);
 
   async function fetchNotifications() {
     setLoading(true);

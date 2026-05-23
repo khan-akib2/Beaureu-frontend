@@ -2,7 +2,7 @@
 
 import React, { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import { Search, Sparkles, FileUp, MessageSquare, Languages, ClipboardCheck, Clock, Settings, Shield } from "lucide-react";
+import { Search, Sparkles, FileUp, MessageSquare, Languages, ClipboardCheck, Clock, Settings } from "lucide-react";
 
 export default function CommandPalette() {
   const [isOpen, setIsOpen] = useState(false);
@@ -32,7 +32,6 @@ export default function CommandPalette() {
     { title: "Eligibility Finder", path: "/dashboard/eligibility", icon: ClipboardCheck },
     { title: "Application Tracker", path: "/dashboard/tracker", icon: Clock },
     { title: "Settings Config", path: "/dashboard/settings", icon: Settings },
-    { title: "Admin Portal", path: "/admin", icon: Shield },
   ];
 
   const filteredCommands = commands.filter((cmd) =>

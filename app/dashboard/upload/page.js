@@ -351,7 +351,7 @@ export default function DocumentUploadPage() {
                     <div>
                       <CardTitle className="text-sm">Compliance Report</CardTitle>
                       <CardDescription className="text-xs flex items-center gap-1">
-                        Powered by <span className="font-bold text-[#1a56db]">Groq · llama-3.3-70b</span>
+                        Powered by <span className="font-bold text-[#1a56db]">Groq · llama-3.1-8b</span>
                       </CardDescription>
                     </div>
                     <Badge variant={selectedDoc.status === "verified" ? "success" : "warning"}>
