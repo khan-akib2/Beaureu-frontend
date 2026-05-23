@@ -84,9 +84,11 @@ export default function RootLayout({ children }) {
                 try {
                   const token = window.sessionStorage.getItem('bureau_token');
                   if (token) {
-                    document.cookie = "bureau_token=" + token + "; path=/; max-age=604800; SameSite=Lax";
+                    const isProd = window.location.protocol === 'https:';
+                    document.cookie = "bureau_token=" + token + "; path=/; max-age=604800; SameSite=" + (isProd ? "None; Secure" : "Lax");
                   } else {
                     document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+                    document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
                   }
                 } catch (e) {}
               }
@@ -141,6 +143,7 @@ export default function RootLayout({ children }) {
                     try {
                       window.sessionStorage.removeItem('bureau_token');
                       document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+                      document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
                     } catch (e) {}
                   }
 
@@ -150,6 +153,7 @@ export default function RootLayout({ children }) {
                       try {
                         window.sessionStorage.removeItem('bureau_token');
                         document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=Lax";
+                        document.cookie = "bureau_token=; path=/; expires=Thu, 01 Jan 1970 00:00:00 GMT; SameSite=None; Secure";
                       } catch (e) {}
                     }
 
