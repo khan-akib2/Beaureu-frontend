@@ -14,7 +14,6 @@ import {
   FileCheck2,
   FileText,
   Home,
-  Landmark,
   LogOut,
   Menu,
   Search,
@@ -122,7 +121,6 @@ export default function DashboardLayout({ children }) {
     { name: "Services", path: "/dashboard/eligibility", icon: BriefcaseBusiness },
     { name: "Document Verification", path: "/dashboard/upload", icon: ShieldCheck },
     { name: "Applications", path: "/dashboard/tracker", icon: FileText },
-    { name: "Schemes", path: "/dashboard/eligibility", icon: Landmark },
     { name: "Notifications", path: "/dashboard/notifications", icon: Bell, badge: notifications.filter((n) => !n.read).length || null },
     { name: "Settings", path: "/dashboard/settings", icon: Settings },
   ];

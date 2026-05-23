@@ -106,7 +106,7 @@ export default function EligibilityPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
         
         {/* Left Side: Parameters input Form */}
-        <div className="lg:col-span-1 lg:sticky lg:top-5 self-start lg:max-h-[calc(100vh-100px)] lg:overflow-y-auto space-y-6 pr-1">
+        <div className="lg:col-span-1 lg:sticky lg:top-5 self-start lg:max-h-[calc(100vh-150px)] lg:overflow-y-auto space-y-6 pr-1 pb-8">
           <Card className="bg-white" hover={false}>
             <CardHeader>
               <CardTitle className="text-sm">Demographics Profile</CardTitle>
