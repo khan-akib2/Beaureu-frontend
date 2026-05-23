@@ -239,8 +239,8 @@ export default function DashboardLayout({ children }) {
 function SidebarContent({ user, navLinks, pathname, handleLogout, t }) {
   return (
     <div className="flex h-[calc(100vh-3rem)] w-full flex-col rounded-[32px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-      <div className="mb-6 flex items-center px-2 py-2">
-        <img src="/logo.jpg" alt="BureauAI Logo" className="h-10 w-auto object-contain" />
+      <div className="mb-6 flex items-center px-1">
+        <img src="/logo.jpg" alt="BureauAI Logo" className="h-16 w-auto object-contain" />
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1">

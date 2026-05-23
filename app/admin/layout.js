@@ -231,7 +231,7 @@ function SidebarContent({ pathname, handleLogout, adminLinks }) {
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* Emblem & Logo Header */}
         <div className="px-6 py-5 border-b border-slate-800/60 flex items-center bg-slate-950/20">
-          <img src="/logo.jpg" alt="BureauAI Logo" className="h-9 w-auto object-contain bg-white p-1 rounded-xl" />
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-14 w-auto object-contain bg-white p-1 rounded-xl" />
         </div>
 
         {/* Navigation list */}
