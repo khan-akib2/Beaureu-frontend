@@ -87,6 +87,13 @@ export default function TrackerPage() {
   const [documents, setDocuments] = useState([]);
   const [loading, setLoading] = useState(true);
   const [mounted, setMounted] = useState(false);
+  const [confirmModal, setConfirmModal] = useState(null); // { title, message, onConfirm }
+  const [toast, setToast] = useState(null);
+
+  const triggerToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
 
   // Wizard modal control
   const [wizardOpen, setWizardOpen] = useState(false);
@@ -253,29 +260,40 @@ export default function TrackerPage() {
         setAiBriefing(null);
         setWizardFiles([]);
         setReferenceNumber("");
+        triggerToast("Governance Tracker started successfully.");
       } else {
-        alert(data.error || "Failed to seed tracking ledger.");
+        triggerToast(data.error || "Failed to seed tracking ledger.", "error");
       }
     } catch {
-      alert("Registration error.");
+      triggerToast("Registration error.", "error");
     } finally {
       setLoading(false);
     }
   };
 
   // Delete Tracker
-  const handleDeleteTracker = async (appId) => {
-    if (!confirm("Are you sure you want to stop tracking this application?")) return;
-    try {
-      const res = await fetch(`${API}/api/applications/${appId}`, { method: "DELETE", credentials: "include" });
-      if (res.ok) {
-        const updated = trackers.filter((t) => t._id !== appId);
-        setTrackers(updated);
-        setSelectedTracker(updated[0] || null);
+  const handleDeleteTracker = (appId) => {
+    setConfirmModal({
+      title: "Stop Tracking",
+      message: "Are you sure you want to stop tracking this application? This action cannot be undone.",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          const res = await fetch(`${API}/api/applications/${appId}`, { method: "DELETE", credentials: "include" });
+          if (res.ok) {
+            const updated = trackers.filter((t) => t._id !== appId);
+            setTrackers(updated);
+            setSelectedTracker(updated[0] || null);
+            triggerToast("Governance tracker stopped.");
+          } else {
+            triggerToast("Failed to stop tracking.", "error");
+          }
+        } catch (err) {
+          console.error("Failed to delete tracker:", err);
+          triggerToast("Error stopping tracker.", "error");
+        }
       }
-    } catch (err) {
-      console.error("Failed to delete tracker:", err);
-    }
+    });
   };
 
   // Copilot Interactive Chat
@@ -342,6 +360,54 @@ export default function TrackerPage() {
   return (
     <div className="space-y-6 animate-fade-in font-sans">
       
+      {/* Custom Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(15,23,42,0.6)" }}>
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-150 w-full max-w-sm animate-fade-in overflow-hidden relative">
+            {/* Top decorative gradient line */}
+            <div className="h-1.5 bg-gradient-to-r from-amber-500 via-slate-100 to-emerald-600" />
+            <div className="p-8 flex flex-col items-center text-center">
+              {/* Centered Trash icon badge with pulse effect */}
+              <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mb-5 shadow-inner relative">
+                <div className="absolute inset-0 rounded-full bg-rose-200/40 animate-ping opacity-75" />
+                <Trash2 className="w-7 h-7 text-red-500 relative z-10" />
+              </div>
+              
+              <h3 className="text-base font-black text-slate-900 tracking-tight">{confirmModal.title}</h3>
+              <p className="text-xs text-slate-500 mt-2.5 leading-relaxed font-semibold max-w-[280px]">
+                {confirmModal.message}
+              </p>
+              
+              {/* Action buttons */}
+              <div className="mt-8 grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="px-4 py-3 text-xs font-bold text-slate-650 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className="px-4 py-3 text-xs font-black text-white bg-gradient-to-r from-red-500 to-rose-600 rounded-xl hover:from-red-600 hover:to-rose-700 shadow-md shadow-red-500/10 hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Stop Tracking
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 z-[9999] px-4 py-3 rounded-xl border text-xs font-bold flex items-center gap-2.5 shadow-lg animate-fade-in ${
+          toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-650"
+        }`}>
+          <div className="w-2 h-2 rounded-full bg-current animate-ping" />
+          {toast.msg}
+        </div>
+      )}
+
       {/* Sleek Saffron-Green Tricolor Top Accent */}
       <div className="h-1 bg-gradient-to-r from-amber-500 via-slate-100 to-emerald-600 rounded-full" />
 

@@ -22,7 +22,8 @@ import {
   Download,
   Menu,
   X,
-  Search
+  Search,
+  User
 } from "lucide-react";
 
 const AdminContext = createContext(null);
@@ -99,6 +100,7 @@ export default function AdminLayout({ children }) {
     { name: "Applications", path: "/admin?tab=applications", icon: FileText, hasSub: true },
     { name: "Reports & Analytics", path: "/admin?tab=analytics", icon: BarChart3 },
     { name: "Notifications", path: "/admin?tab=notifications", icon: Bell },
+    { name: "Profile Settings", path: "/admin?tab=profile", icon: User },
     ...(admin?.email === "bureauai@gmail.com" ? [{ name: "System Settings", path: "/admin?tab=settings", icon: Settings }] : []),
     { name: "Audit Logs", path: "/admin?tab=audit", icon: ListTodo },
   ];
@@ -144,7 +146,7 @@ export default function AdminLayout({ children }) {
   }
 
   return (
-    <AdminContext.Provider value={{ admin }}>
+    <AdminContext.Provider value={{ admin, setAdmin }}>
       <div className="h-screen flex flex-col overflow-hidden bg-slate-50 font-sans antialiased text-slate-900">
         
         {/* Tricolor National Governance Stripe */}
@@ -191,6 +193,21 @@ export default function AdminLayout({ children }) {
                   <p className="text-[10px] text-slate-400 font-bold uppercase tracking-wider mt-0.5">BureauAI Ops Control</p>
                 </div>
               </div>
+
+              {/* Admin Profile Info */}
+              {admin && (
+                <Link href="/admin?tab=profile" className="flex items-center gap-3 hover:opacity-85 transition-opacity">
+                  <div className="text-right hidden sm:block">
+                    <p className="text-xs font-bold text-slate-800 leading-none">{admin.name}</p>
+                    <p className="text-[9px] font-semibold text-slate-400 uppercase mt-1 leading-none">{admin.role}</p>
+                  </div>
+                  <img 
+                    src={admin.avatar || `https://api.dicebear.com/7.x/bottts/svg?seed=${encodeURIComponent(admin.name)}`}
+                    alt="Admin Avatar"
+                    className="w-8 h-8 rounded-full border border-slate-200 bg-slate-50 object-cover"
+                  />
+                </Link>
+              )}
             </header>
 
           {/* Page content view */}

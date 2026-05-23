@@ -104,7 +104,7 @@ export default function SignupPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Registration failed.");
+        setError(data.error || "Signup failed. Please check your details and try again.");
       } else {
         // Success: transition to OTP verification
         setStep("verify");
@@ -113,7 +113,7 @@ export default function SignupPage() {
         setOtpValues(["", "", "", "", "", ""]);
       }
     } catch {
-      setError("Unable to connect to authentication server.");
+      setError("Network error: Unable to reach the authentication service.");
     } finally {
       setIsLoading(false);
     }
@@ -177,7 +177,7 @@ export default function SignupPage() {
       });
       const data = await res.json();
       if (!res.ok) {
-        setError(data.error || "Verification failed. Please try again.");
+        setError(data.error || "OTP verification failed. Please try again.");
       } else {
         if (data.token) {
           try {
@@ -193,7 +193,7 @@ export default function SignupPage() {
         router.refresh();
       }
     } catch {
-      setError("Unable to connect to verification server.");
+      setError("Network error: Unable to reach the verification service.");
     } finally {
       setIsLoading(false);
     }
@@ -233,7 +233,7 @@ export default function SignupPage() {
           });
           const data = await res.json();
           if (!res.ok) {
-            setError(data.error || "Google authentication failed.");
+            setError(data.error || "Google sign‑in failed. Please try again.");
           } else {
             if (data.token) {
               try {
@@ -249,7 +249,7 @@ export default function SignupPage() {
             router.refresh();
           }
         } catch {
-          setError("Google SSO link failed.");
+          setError("Failed to load Google sign‑in button.");
         } finally {
           setIsGoogleLoading(false);
         }

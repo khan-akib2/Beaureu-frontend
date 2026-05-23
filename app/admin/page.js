@@ -5,6 +5,7 @@ export const dynamic = "force-dynamic";
 import React, { useState, useEffect, useCallback } from "react";
 import { useSearchParams } from "next/navigation";
 import { useAdmin } from "./layout";
+import AdminProfileSettings from "./AdminProfileSettings";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -109,6 +110,7 @@ function AdminContent() {
   const [notifLoading, setNotifLoading] = useState(false);
   const [notifTarget, setNotifTarget] = useState("all");
   const [notifUserId, setNotifUserId] = useState("");
+  const [confirmModal, setConfirmModal] = useState(null); // { message, onConfirm }
 
   useEffect(() => {
     Promise.resolve().then(() => {
@@ -245,13 +247,18 @@ function AdminContent() {
     finally { setActionLoading(false); }
   };
 
-  const handleDeleteUser = async (userId) => {
-    if (!confirm("Delete this user? This cannot be undone.")) return;
-    try {
-      const res = await fetch(`${API}/api/admin/users?userId=${userId}`, { method: "DELETE", credentials: "include" });
-      if (res.ok) { setUsers(prev => prev.filter(u => u._id !== userId)); triggerToast("User deleted."); }
-      else triggerToast("Failed to delete user.", "error");
-    } catch { triggerToast("Error deleting user.", "error"); }
+  const handleDeleteUser = (userId) => {
+    setConfirmModal({
+      message: "Permanently remove this citizen from the registry? This action cannot be undone.",
+      onConfirm: async () => {
+        setConfirmModal(null);
+        try {
+          const res = await fetch(`${API}/api/admin/users?userId=${userId}`, { method: "DELETE", credentials: "include" });
+          if (res.ok) { setUsers(prev => prev.filter(u => u._id !== userId)); triggerToast("Citizen record permanently deleted."); }
+          else triggerToast("Failed to delete citizen record.", "error");
+        } catch { triggerToast("Error deleting citizen record.", "error"); }
+      }
+    });
   };
 
   const handleToggleRole = async (userId, currentRole) => {
@@ -410,6 +417,44 @@ function AdminContent() {
 
   return (
     <div className="space-y-6 animate-fade-in font-sans">
+
+      {/* Custom Confirm Modal */}
+      {confirmModal && (
+        <div className="fixed inset-0 z-[100] flex items-center justify-center p-4" style={{ backdropFilter: "blur(8px)", backgroundColor: "rgba(15,23,42,0.6)" }}>
+          <div className="bg-white rounded-3xl shadow-2xl border border-slate-150 w-full max-w-sm animate-fade-in overflow-hidden relative">
+            {/* Top decorative gradient line */}
+            <div className="h-1.5 bg-gradient-to-r from-red-500 via-rose-500 to-amber-500" />
+            <div className="p-8 flex flex-col items-center text-center">
+              {/* Centered Trash icon badge with pulse effect */}
+              <div className="w-16 h-16 rounded-full bg-rose-50 border border-rose-100 flex items-center justify-center mb-5 shadow-inner relative">
+                <div className="absolute inset-0 rounded-full bg-rose-200/40 animate-ping opacity-75" />
+                <Trash2 className="w-7 h-7 text-red-500 relative z-10" />
+              </div>
+              
+              <h3 className="text-base font-black text-slate-900 tracking-tight">Confirm Deletion</h3>
+              <p className="text-xs text-slate-500 mt-2.5 leading-relaxed font-semibold max-w-[280px]">
+                {confirmModal.message}
+              </p>
+              
+              {/* Action buttons */}
+              <div className="mt-8 grid grid-cols-2 gap-3 w-full">
+                <button
+                  onClick={() => setConfirmModal(null)}
+                  className="px-4 py-3 text-xs font-bold text-slate-650 bg-slate-50 hover:bg-slate-100 border border-slate-200 rounded-xl transition-all hover:text-slate-800"
+                >
+                  Cancel
+                </button>
+                <button
+                  onClick={confirmModal.onConfirm}
+                  className="px-4 py-3 text-xs font-black text-white bg-gradient-to-r from-red-500 via-rose-500 to-rose-600 rounded-xl hover:from-red-650 hover:to-rose-750 shadow-md shadow-red-500/10 hover:shadow-lg active:scale-95 transition-all flex items-center justify-center gap-1.5"
+                >
+                  <Trash2 className="w-3.5 h-3.5" /> Delete
+                </button>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* Toast */}
       {toast && (
@@ -1525,6 +1570,11 @@ function AdminContent() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* ── Profile Settings Tab ── */}
+      {tab === "profile" && (
+        <AdminProfileSettings />
       )}
 
     </div>

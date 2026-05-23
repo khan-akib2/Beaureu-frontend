@@ -193,6 +193,12 @@ export default function ChatPage() {
   // Speech recognition state
   const [isListening, setIsListening] = useState(false);
   
+  const [toast, setToast] = useState(null);
+  const triggerToast = (msg, type = "success") => {
+    setToast({ msg, type });
+    setTimeout(() => setToast(null), 3500);
+  };
+  
   const messagesEndRef = useRef(null);
   const inputRef = useRef(null);
   const fileInputRef = useRef(null);
@@ -307,7 +313,7 @@ export default function ChatPage() {
   // Toggle Speech-to-Text Listening
   const toggleListen = () => {
     if (!recognitionRef.current) {
-      alert("Speech recognition is not supported in this browser.");
+      triggerToast("Speech recognition is not supported in this browser.", "error");
       return;
     }
     if (isListening) {
@@ -328,7 +334,7 @@ export default function ChatPage() {
   // Text-to-Speech speaking synthesis
   const speakText = (text, msgId) => {
     if (typeof window === "undefined" || !window.speechSynthesis) {
-      alert("Text-to-speech is not supported in this browser.");
+      triggerToast("Text-to-speech is not supported in this browser.", "error");
       return;
     }
     if (speakingMessageId === msgId) {
@@ -366,7 +372,7 @@ export default function ChatPage() {
   // Clipboard copy helper
   const copyText = (text, msgId) => {
     if (typeof window === "undefined" || !navigator.clipboard) {
-      alert("Clipboard copy is not supported in this browser.");
+      triggerToast("Clipboard copy is not supported in this browser.", "error");
       return;
     }
     navigator.clipboard.writeText(text).then(() => {
@@ -400,11 +406,11 @@ export default function ChatPage() {
           fileType: data.document.fileType
         });
       } else {
-        alert(data.error || "Failed to upload attachment file.");
+        triggerToast(data.error || "Failed to upload attachment file.", "error");
       }
     } catch (err) {
       console.error("Upload error:", err);
-      alert("Attachment upload failed. Please try again.");
+      triggerToast("Attachment upload failed. Please try again.", "error");
     } finally {
       setUploadingFile(false);
     }
@@ -585,6 +591,16 @@ export default function ChatPage() {
 
   return (
     <div className="flex flex-col md:flex-row gap-5 animate-fade-in font-sans" style={{ height: "calc(100vh - 7rem)" }}>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className={`fixed bottom-5 right-5 z-[9999] px-4 py-3 rounded-xl border text-xs font-bold flex items-center gap-2.5 shadow-lg animate-fade-in ${
+          toast.type === "success" ? "bg-emerald-50 border-emerald-200 text-emerald-700" : "bg-red-50 border-red-200 text-red-650"
+        }`}>
+          <div className="w-2 h-2 rounded-full bg-current animate-ping" />
+          {toast.msg}
+        </div>
+      )}
 
       {/* ── Left sidebar ── */}
       <div className="w-full md:w-60 shrink-0 flex flex-col bg-white border border-slate-200 rounded-3xl p-4 overflow-hidden shadow-sm">
