@@ -1,11 +1,49 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { motion } from "framer-motion";
+import {
+  ArrowRight,
+  BadgeCheck,
+  Bell,
+  Building2,
+  CheckCircle2,
+  ChevronRight,
+  CircleAlert,
+  Clock3,
+  FileCheck2,
+  FileText,
+  Gauge,
+  Globe2,
+  Landmark,
+  Languages,
+  LayoutDashboard,
+  LineChart,
+  LockKeyhole,
+  MessageSquareText,
+  SearchCheck,
+  ShieldCheck,
+  Sparkles,
+  TrendingUp,
+  Zap
+} from "lucide-react";
 
 const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const FETCH_OPTS = { credentials: "include" };
+
+const fadeUp = {
+  hidden: { opacity: 0, y: 18 },
+  show: { opacity: 1, y: 0, transition: { duration: 0.2, ease: "easeOut" } },
+};
+
+const stagger = {
+  hidden: {},
+  show: { transition: { staggerChildren: 0.06 } },
+};
+
+const premiumShadow = "shadow-[0_20px_60px_rgba(15,23,42,0.08)]";
 
 export default function LandingPage() {
   const router = useRouter();
@@ -38,473 +76,522 @@ export default function LandingPage() {
       console.error("Logout failed:", err);
     }
   };
-  const features = [
-    {
-      icon: "🤖",
-      title: "AI Document Audit",
-      desc: "Upload any government document and get instant AI-powered analysis, compliance check, and suggestions.",
-      color: "from-blue-500 to-indigo-600",
-      bg: "bg-blue-50",
-    },
-    {
-      icon: "🎯",
-      title: "Scheme Eligibility Finder",
-      desc: "Enter your profile once — get matched to eligible welfare schemes from PMAY, PM Kisan, Ayushman Bharat, and more.",
-      color: "from-emerald-500 to-teal-600",
-      bg: "bg-emerald-50",
-    },
-    {
-      icon: "📍",
-      title: "Application Tracker",
-      desc: "Real-time milestone tracking for Aadhaar, Passport, Income Certificates, and all government applications.",
-      color: "from-orange-500 to-amber-500",
-      bg: "bg-orange-50",
-    },
-    {
-      icon: "🌐",
-      title: "Legal Translator",
-      desc: "Simplify complex bureaucratic notices into plain English, Hindi, Marathi or Urdu in seconds.",
-      color: "from-purple-500 to-violet-600",
-      bg: "bg-purple-50",
-    },
-    {
-      icon: "💬",
-      title: "AI Copilot Chat",
-      desc: "Ask any question about government procedures — Aadhaar updates, PAN linking, ration cards — and get step-by-step guidance.",
-      color: "from-rose-500 to-pink-600",
-      bg: "bg-rose-50",
-    },
-    {
-      icon: "🔒",
-      title: "Secure & Private",
-      desc: "Bank-grade 256-bit SSL encryption. Your data never leaves our secure government-compliant servers.",
-      color: "from-slate-600 to-slate-800",
-      bg: "bg-slate-50",
-    },
-  ];
 
-  const stats = [
-    { value: "2.4M+", label: "Citizens Served" },
-    { value: "98.7%", label: "AI Accuracy Rate" },
-    { value: "450+", label: "Govt Schemes Listed" },
-    { value: "28", label: "States Covered" },
-  ];
+  const destination = user?.role === "admin" ? "/admin" : "/dashboard";
 
-  const services = [
-    { name: "Aadhaar Card", icon: "🪪", desc: "Enrolment, Update, Linking" },
-    { name: "PAN Card", icon: "💳", desc: "Apply, Link to Aadhaar, e-PAN" },
-    { name: "Passport", icon: "📘", desc: "Fresh, Renewal, Tatkal" },
-    { name: "Income Certificate", icon: "📋", desc: "Tahsildar, Revenue Dept." },
-    { name: "Ration Card", icon: "🏪", desc: "BPL, APL, AAY categories" },
-    { name: "Caste Certificate", icon: "📄", desc: "SC, ST, OBC documentation" },
-    { name: "Birth Certificate", icon: "👶", desc: "Municipal Corporation" },
-    { name: "Land Records", icon: "🏡", desc: "7/12, RoR, Property Cards" },
+  return (
+    <div className="min-h-screen bg-white font-sans text-[#0F172A]">
+      <Navbar user={user} loading={loading} destination={destination} onLogout={handleLogout} />
+      <Hero user={user} loading={loading} destination={destination} onLogout={handleLogout} />
+      <StatsStrip />
+      <Features />
+      <Services user={user} destination={destination} />
+      <HowItWorks />
+      <CTA user={user} loading={loading} destination={destination} onLogout={handleLogout} />
+      <Footer />
+    </div>
+  );
+}
+
+function Navbar({ user, loading, destination, onLogout }) {
+  return (
+    <nav className="fixed left-0 right-0 top-0 z-50 h-[72px] border-b border-slate-200 bg-white">
+      <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
+        <Link href="/" className="flex items-center gap-2.5">
+          <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-blue-100 bg-[#EEF4FF] text-[#1D4ED8]">
+            <ShieldCheck className="h-4 w-4" />
+          </div>
+          <div>
+            <div className="text-base font-black tracking-tight text-[#0F172A]">BureauAI</div>
+            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Citizen Platform</div>
+          </div>
+        </Link>
+
+        <div className="hidden items-center gap-6 md:flex">
+          {[
+            ["Services", "#services"],
+            ["Features", "#features"],
+            ["Schemes", "#schemes"],
+            ["Dashboard", user ? destination : "/login"],
+          ].map(([label, href]) => (
+            <Link key={label} href={href} className="text-xs font-bold text-slate-600 transition-colors hover:text-[#1D4ED8]">
+              {label}
+            </Link>
+          ))}
+        </div>
+
+        <div className="flex min-h-9 items-center gap-2">
+          {!loading && (
+            user ? (
+              <>
+                <motion.button
+                  whileHover={{ scale: 1.02 }}
+                  transition={{ duration: 0.2 }}
+                  onClick={onLogout}
+                  className="hidden rounded-2xl border border-slate-200 px-3 py-1.5 text-xs font-bold text-slate-700 transition hover:border-slate-300 hover:bg-slate-50 sm:inline-flex"
+                >
+                  Logout
+                </motion.button>
+                <PrimaryLink href={destination}>Open Dashboard</PrimaryLink>
+              </>
+            ) : (
+              <>
+                <SecondaryLink href="/login">Sign In</SecondaryLink>
+                <PrimaryLink href="/signup">Get Started</PrimaryLink>
+              </>
+            )
+          )}
+        </div>
+      </div>
+    </nav>
+  );
+}
+
+function Hero({ user, loading, destination, onLogout }) {
+  const trustItems = [
+    { icon: ShieldCheck, label: "Secure Authentication" },
+    { icon: Landmark, label: "India Focused" },
+    { icon: Zap, label: "AI Guided" },
+    { icon: LockKeyhole, label: "Private by Design" },
   ];
 
   return (
-    <div className="min-h-screen bg-white font-sans">
+    <section className="relative overflow-hidden bg-[linear-gradient(180deg,#FFFFFF,#F8FAFC)] pt-[72px]">
+      <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_50%_0%,rgba(29,78,216,0.14),transparent_58%)]" />
+      <div className="absolute right-[-12rem] top-24 h-[34rem] w-[34rem] rounded-full bg-blue-100/40 blur-3xl" />
+      <div className="absolute left-[-14rem] top-48 h-[28rem] w-[28rem] rounded-full bg-teal-100/30 blur-3xl" />
+      <div
+        className="absolute inset-0 opacity-[0.035]"
+        style={{
+          backgroundImage: "linear-gradient(#1D4ED8 1px, transparent 1px), linear-gradient(to right, #1D4ED8 1px, transparent 1px)",
+          backgroundSize: "56px 56px",
+        }}
+      />
 
-      {/* ── Navigation ── */}
-      <nav className="fixed top-0 left-0 right-0 z-50 bg-white/95 backdrop-blur-md border-b border-slate-200/80 shadow-sm">
-        <div className="max-w-7xl mx-auto px-6 h-16 flex items-center justify-between">
-          {/* Logo */}
-          <div className="flex items-center gap-3">
-            <div className="w-8 h-8 rounded-lg bg-[#1a56db] flex items-center justify-center shadow-sm shadow-blue-500/30">
-              <svg className="w-4.5 h-4.5 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-              </svg>
-            </div>
-            <span className="font-bold text-slate-900 text-base">
-              Bureau<span className="text-[#1a56db]">AI</span>
+      <div className="relative mx-auto grid min-h-[calc(100vh-72px)] max-w-[1400px] grid-cols-1 items-center gap-10 px-6 py-6 xl:grid-cols-[1.25fr_0.75fr]">
+        <motion.div variants={stagger} initial="hidden" animate="show" className="max-w-[1080px]">
+          <motion.div variants={fadeUp} className="mb-7 inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-4 py-2 text-xs font-extrabold text-[#1D4ED8] shadow-sm">
+            <Sparkles className="h-3.5 w-3.5" />
+            AI assistance for Indian public services
+          </motion.div>
+
+          <motion.h1 variants={fadeUp} className="max-w-[1080px] text-[42px] font-black leading-[1.08] tracking-tight text-[#0F172A] sm:text-[48px] xl:text-[50px] 2xl:text-[56px]">
+            Navigate India&apos;s
+            <br />
+            <span className="relative inline-block">
+              Government Services
+              <span className="absolute -bottom-2 left-1 right-2 h-2 rounded-full bg-[#1D4ED8]/12">
+                <motion.span
+                  initial={{ width: 0 }}
+                  animate={{ width: "100%" }}
+                  transition={{ duration: 0.5, delay: 0.18, ease: "easeOut" }}
+                  className="block h-full rounded-full bg-[#1D4ED8]/22"
+                />
+              </span>
             </span>
-          </div>
+            <br />
+            with{" "}
+            <span className="whitespace-nowrap bg-gradient-to-r from-[#1D4ED8] to-[#0F766E] bg-clip-text text-transparent">
+              Intelligent Assistance
+            </span>
+          </motion.h1>
 
-          {/* Nav links */}
-          <div className="hidden md:flex items-center gap-8">
-            {["Features", "Services", "About"].map((item) => (
-              <a key={item} href={`#${item.toLowerCase()}`} className="text-sm font-semibold text-slate-600 hover:text-[#1a56db] transition-colors">
-                {item}
-              </a>
-            ))}
-          </div>
+          <motion.p variants={fadeUp} className="mt-6 max-w-[600px] text-base font-medium leading-7 text-slate-600">
+            BureauAI helps citizens understand documents, track applications, discover schemes, and get clear AI-guided next steps across Indian government services.
+          </motion.p>
 
-          {/* CTA Buttons */}
-          <div className="flex items-center gap-3 min-h-[40px]">
+          <motion.div variants={fadeUp} className="mt-6 flex min-h-[48px] flex-wrap gap-3">
             {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <button onClick={handleLogout} className="text-sm font-semibold text-slate-700 hover:text-red-600 transition-colors px-3 py-1.5">
-                      Logout
-                    </button>
-                    <Link href={user.role === "admin" ? "/admin" : "/dashboard"} className="text-sm font-bold text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-px">
-                      Dashboard
-                    </Link>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/login" className="text-sm font-semibold text-slate-700 hover:text-[#1a56db] transition-colors px-3 py-1.5">
-                      Sign In
-                    </Link>
-                    <Link href="/signup" className="text-sm font-bold text-white bg-[#1a56db] hover:bg-blue-700 px-4 py-2 rounded-xl transition-all shadow-sm shadow-blue-500/20 hover:shadow-blue-500/30 hover:-translate-y-px">
-                      Get Started Free
-                    </Link>
-                  </>
-                )}
-              </>
-            )}
-          </div>
-        </div>
-      </nav>
-
-      {/* ── Hero ── */}
-      <section className="relative min-h-screen flex items-center pt-16 overflow-hidden">
-        {/* Background decorations */}
-        <div className="absolute inset-0 bg-gradient-to-br from-slate-50 via-blue-50/30 to-indigo-50/50" />
-        <div className="absolute top-20 right-0 w-[600px] h-[600px] bg-gradient-to-bl from-blue-100/60 to-transparent rounded-full blur-3xl -translate-y-1/4" />
-        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-gradient-to-tr from-indigo-100/40 to-transparent rounded-full blur-3xl" />
-
-        {/* Grid pattern overlay */}
-        <div className="absolute inset-0 opacity-[0.03]"
-          style={{
-            backgroundImage: "linear-gradient(#1a56db 1px, transparent 1px), linear-gradient(to right, #1a56db 1px, transparent 1px)",
-            backgroundSize: "64px 64px"
-          }} />
-
-        <div className="relative max-w-7xl mx-auto px-6 py-24 grid grid-cols-1 lg:grid-cols-2 gap-16 items-center">
-
-          {/* Left: Text */}
-          <div className="space-y-8">
-            {/* Badge */}
-            <div className="inline-flex items-center gap-2 px-4 py-2 bg-blue-50 border border-blue-200 rounded-full text-xs font-bold text-[#1a56db]">
-              <span className="w-1.5 h-1.5 rounded-full bg-[#1a56db] animate-pulse" />
-              Powered by Google Gemini AI · Official Portal
-            </div>
-
-            <div>
-              <h1 className="text-5xl sm:text-6xl font-black text-slate-900 leading-[1.1] tracking-tight">
-                Navigate India&apos;s
-                <br />
-                <span className="text-transparent bg-clip-text bg-gradient-to-r from-[#1a56db] to-indigo-500">
-                  Government
-                </span>
-                <br />
-                with AI Ease
-              </h1>
-              <p className="mt-6 text-lg text-slate-500 leading-relaxed max-w-lg">
-                BureauAI simplifies every government process — from Aadhaar updates to passport renewals. AI-powered, multilingual, and built for every Indian citizen.
-              </p>
-            </div>
-
-            <div className="flex flex-wrap gap-4 min-h-[52px]">
-              {!loading && (
+              user ? (
                 <>
-                  {user ? (
-                    <>
-                      <Link href={user.role === "admin" ? "/admin" : "/dashboard"}
-                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1a56db] hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-sm">
-                        Go to Dashboard
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                      </Link>
-                      <button onClick={handleLogout}
-                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-red-600 text-slate-700 hover:text-red-600 font-bold rounded-2xl transition-all text-sm hover:shadow-sm">
-                        Logout
-                      </button>
-                    </>
-                  ) : (
-                    <>
-                      <Link href="/signup"
-                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-[#1a56db] hover:bg-blue-700 text-white font-bold rounded-2xl transition-all shadow-lg shadow-blue-500/25 hover:shadow-blue-500/40 hover:-translate-y-0.5 text-sm">
-                        Start for Free
-                        <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                        </svg>
-                      </Link>
-                      <Link href="/login"
-                        className="inline-flex items-center gap-2 px-7 py-3.5 bg-white border border-slate-200 hover:border-[#1a56db] text-slate-700 hover:text-[#1a56db] font-bold rounded-2xl transition-all text-sm hover:shadow-sm">
-                        Sign In to Portal
-                      </Link>
-                    </>
-                  )}
+                  <PrimaryLink href={destination} large>Go to Dashboard</PrimaryLink>
+                  <motion.button
+                    whileHover={{ scale: 1.02 }}
+                    transition={{ duration: 0.2 }}
+                    onClick={onLogout}
+                    className="inline-flex items-center rounded-2xl border border-slate-200 bg-white px-6 py-3.5 text-sm font-extrabold text-slate-700 transition hover:border-red-200 hover:text-red-600"
+                  >
+                    Logout
+                  </motion.button>
                 </>
-              )}
-            </div>
+              ) : (
+                <>
+                  <PrimaryLink href="/signup" large>Start Free</PrimaryLink>
+                  <SecondaryLink href="/login" large>Sign In to Portal</SecondaryLink>
+                </>
+              )
+            )}
+          </motion.div>
 
-            {/* Trust indicators */}
-            <div className="flex flex-wrap items-center gap-6 pt-2">
-              {["🔒 256-bit SSL", "🇮🇳 India-First", "⚡ Instant AI Replies"].map((item) => (
-                <span key={item} className="text-xs font-semibold text-slate-500">{item}</span>
-              ))}
+          <motion.div variants={fadeUp} className="mt-7 flex flex-wrap gap-3">
+            {trustItems.map((item) => {
+              const Icon = item.icon;
+              return (
+                <div key={item.label} className="inline-flex items-center gap-2 rounded-full border border-slate-200 bg-white px-3.5 py-2 text-xs font-extrabold text-slate-600 shadow-sm">
+                  <Icon className="h-3.5 w-3.5 text-[#1D4ED8]" />
+                  {item.label}
+                </div>
+              );
+            })}
+          </motion.div>
+        </motion.div>
+
+        <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: 0.08 }} className="relative mx-auto w-full max-w-[720px] xl:max-w-none">
+          <CommandCenter />
+        </motion.div>
+      </div>
+    </section>
+  );
+}
+
+function CommandCenter() {
+  const metricCards = [
+    { label: "Applications", value: "12", trend: "+3 this week", icon: FileText, accent: "text-[#1D4ED8]", bg: "bg-blue-50" },
+    { label: "Approved", value: "8", trend: "92% confidence", icon: CheckCircle2, accent: "text-[#0F766E]", bg: "bg-teal-50" },
+    { label: "Processing", value: "3", trend: "2 on schedule", icon: Clock3, accent: "text-[#F59E0B]", bg: "bg-amber-50" },
+    { label: "Action Required", value: "1", trend: "Identity proof", icon: CircleAlert, accent: "text-red-600", bg: "bg-red-50" },
+  ];
+
+  const timeline = [
+    ["PAN verification", "Approved", "Completed"],
+    ["Passport renewal", "Police review", "In progress"],
+    ["Income certificate", "Upload required", "Action"],
+  ];
+
+  return (
+    <div className="relative mx-auto max-w-[620px]">
+      <div className="absolute -left-8 top-16 hidden rounded-2xl border border-slate-200 bg-white px-4 py-3 text-xs font-extrabold text-slate-700 shadow-[0_20px_60px_rgba(15,23,42,0.08)] lg:block">
+        <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#0F766E]" />
+        Live status synced
+      </div>
+
+      <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className={`rounded-[32px] border border-slate-200 bg-white p-5 ${premiumShadow}`}>
+        <div className="rounded-[24px] border border-slate-200 bg-[#F8FAFC] p-4">
+          <div className="flex items-start justify-between gap-4">
+            <div>
+              <div className="inline-flex items-center gap-2 rounded-full border border-blue-100 bg-white px-3 py-1.5 text-[11px] font-black uppercase tracking-[0.14em] text-[#1D4ED8]">
+                <LayoutDashboard className="h-3.5 w-3.5" />
+                Citizen Command Center
+              </div>
+              <h2 className="mt-3 text-xl font-black leading-tight tracking-tight text-[#0F172A]">Interactive service intelligence</h2>
+              <p className="mt-1.5 max-w-sm text-xs font-medium leading-5 text-slate-600">Monitor applications, recommended actions, and document readiness in one trusted workspace.</p>
+            </div>
+            <div className="flex h-11 w-11 shrink-0 items-center justify-center rounded-2xl bg-[#1D4ED8] text-white shadow-[0_12px_30px_rgba(29,78,216,0.28)]">
+              <Sparkles className="h-5 w-5" />
             </div>
           </div>
 
-          {/* Right: Dashboard Preview Card */}
-          <div className="relative hidden lg:block">
-            <div className="relative bg-white rounded-3xl border border-slate-200/80 shadow-2xl shadow-slate-900/10 overflow-hidden">
-              {/* Card header */}
-              <div className="bg-[#1a56db] p-5 flex items-center justify-between">
-                <div className="flex items-center gap-2.5">
-                  <div className="w-7 h-7 bg-white/20 rounded-lg flex items-center justify-center">
-                    <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                    </svg>
-                  </div>
-                  <span className="text-white font-bold text-sm">BureauAI Dashboard</span>
-                </div>
-                <div className="flex gap-1.5">
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                  <div className="w-2.5 h-2.5 rounded-full bg-white/30" />
-                </div>
-              </div>
-
-              {/* Stat cards */}
-              <div className="p-5 space-y-4">
-                <div className="grid grid-cols-2 gap-3">
-                  {[
-                    { label: "Applications", value: "12", icon: "📁", color: "text-blue-600 bg-blue-50" },
-                    { label: "Approved", value: "8", icon: "✅", color: "text-emerald-600 bg-emerald-50" },
-                    { label: "In Progress", value: "3", icon: "⏳", color: "text-amber-600 bg-amber-50" },
-                    { label: "Action Req.", value: "1", icon: "⚠️", color: "text-red-600 bg-red-50" },
-                  ].map((s) => (
-                    <div key={s.label} className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                      <div className={`text-lg mb-1`}>{s.icon}</div>
-                      <p className="text-xl font-black text-slate-900">{s.value}</p>
-                      <p className="text-[10px] text-slate-400 font-semibold">{s.label}</p>
+          <div className="mt-6 grid grid-cols-2 gap-4">
+            {metricCards.map((card) => {
+              const Icon = card.icon;
+              return (
+                <motion.div key={card.label} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                  <div className="flex items-center justify-between">
+                    <div className={`flex h-9 w-9 items-center justify-center rounded-2xl ${card.bg} ${card.accent}`}>
+                      <Icon className="h-4 w-4" />
                     </div>
-                  ))}
-                </div>
-
-                {/* AI chat preview */}
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                  <p className="text-[10px] font-bold text-slate-400 mb-2">🤖 AI COPILOT</p>
-                  <div className="space-y-2">
-                    <div className="flex justify-end">
-                      <div className="bg-[#1a56db] text-white text-[10px] font-medium px-3 py-1.5 rounded-xl max-w-[80%]">
-                        How do I update my Aadhaar address?
+                    {card.label === "Approved" ? (
+                      <div className="grid h-9 w-9 place-items-center rounded-full border-[4px] border-teal-100 border-t-[#0F766E] text-[9px] font-black text-[#0F766E]">
+                        8
                       </div>
-                    </div>
-                    <div className="bg-white border border-slate-200 text-slate-700 text-[10px] font-medium px-3 py-2 rounded-xl shadow-sm leading-relaxed">
-                      Visit myaadhaar.uidai.gov.in → click &quot;Update Address&quot; → upload address proof + OTP verification. Takes 2–3 days! ✓
-                    </div>
+                    ) : card.label === "Processing" ? (
+                      <div className="h-2 w-14 rounded-full bg-slate-100">
+                        <div className="h-2 w-[66%] rounded-full bg-[#F59E0B]" />
+                      </div>
+                    ) : null}
                   </div>
-                </div>
+                  <p className="mt-2.5 text-2xl font-black leading-none text-[#0F172A]">{card.value}</p>
+                  <div className="mt-1.5 flex items-center justify-between gap-2">
+                    <p className="text-xs font-extrabold text-slate-700">{card.label}</p>
+                    <p className="text-[9px] font-black text-slate-400">{card.trend}</p>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
 
-                {/* Progress tracker */}
-                <div className="bg-slate-50 rounded-xl p-3 border border-slate-100">
-                  <div className="flex justify-between items-center mb-2">
-                    <p className="text-[10px] font-bold text-slate-700">Passport Renewal — Under Review</p>
-                    <span className="text-[10px] font-bold text-[#1a56db]">65%</span>
-                  </div>
-                  <div className="h-1.5 bg-slate-200 rounded-full">
-                    <div className="h-full w-[65%] bg-[#1a56db] rounded-full" />
-                  </div>
-                </div>
+          <div className="mt-3 grid gap-3 lg:grid-cols-[1.05fr_0.95fr]">
+            <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+              <div className="flex items-center justify-between">
+                <h3 className="text-xs font-black text-[#0F172A]">Timeline progress</h3>
+                <LineChart className="h-3.5 w-3.5 text-[#1D4ED8]" />
               </div>
-            </div>
+              <div className="mt-3 space-y-2.5">
+                {timeline.map(([title, subtitle, status], index) => (
+                  <div key={title} className="flex gap-2">
+                    <div className="flex flex-col items-center">
+                      <div className={`h-2.5 w-2.5 rounded-full ${index === 2 ? "bg-[#F59E0B]" : "bg-[#1D4ED8]"}`} />
+                      {index < timeline.length - 1 && <div className="mt-0.5 h-6 w-px bg-slate-200" />}
+                    </div>
+                    <div className="min-w-0">
+                      <p className="truncate text-xs font-black text-[#0F172A]">{title}</p>
+                      <p className="mt-0.5 text-[10px] font-bold text-slate-500">{subtitle}</p>
+                      <p className="mt-0.5 text-[9px] font-black uppercase tracking-[0.12em] text-slate-400">{status}</p>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </motion.div>
 
-            {/* Floating badges */}
-            <div className="absolute -top-4 -right-4 bg-emerald-500 text-white text-xs font-bold px-3 py-1.5 rounded-full shadow-lg">
-              ✓ Live & Secure
-            </div>
-            <div className="absolute -bottom-3 -left-4 bg-white border border-slate-200 shadow-lg rounded-xl px-3 py-2 text-xs">
-              <span className="font-bold text-slate-900">AI responded</span>
-              <span className="text-slate-400 ml-1">in 1.2s</span>
+            <div className="space-y-3">
+              <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-blue-100 bg-white p-3 shadow-sm">
+                <div className="flex items-center gap-2.5">
+                  <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-blue-50 text-[#1D4ED8]">
+                    <Sparkles className="h-4 w-4" />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-[#0F172A]">AI recommendation</p>
+                    <p className="text-[10px] font-bold text-slate-500">Upload address proof before Friday</p>
+                  </div>
+                </div>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-slate-200 bg-white p-3 shadow-sm">
+                <div className="flex items-start justify-between gap-2">
+                  <div>
+                    <p className="text-xs font-black text-[#0F172A]">Recent update</p>
+                    <p className="mt-1 text-[10px] font-bold leading-4 text-slate-500">Passport application moved to verification review.</p>
+                  </div>
+                  <BadgeCheck className="h-4 w-4 text-[#0F766E]" />
+                </div>
+              </motion.div>
+
+              <motion.div whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-amber-100 bg-white p-3 shadow-sm">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-amber-50 text-[#F59E0B]">
+                      <Bell className="h-4 w-4" />
+                    </div>
+                    <div>
+                      <p className="text-xs font-black text-[#0F172A]">Notification</p>
+                      <p className="text-[10px] font-bold text-slate-500">2 service alerts pending</p>
+                    </div>
+                  </div>
+                  <ChevronRight className="h-3.5 w-3.5 text-slate-400" />
+                </div>
+              </motion.div>
             </div>
           </div>
         </div>
-      </section>
+      </motion.div>
 
-      {/* ── Stats Strip ── */}
-      <section className="bg-[#1a56db] py-12">
-        <div className="max-w-5xl mx-auto px-6 grid grid-cols-2 lg:grid-cols-4 gap-8 text-center">
-          {stats.map((s) => (
-            <div key={s.label}>
-              <p className="text-4xl font-black text-white mb-1">{s.value}</p>
-              <p className="text-blue-200 text-sm font-semibold">{s.label}</p>
-            </div>
+      <div className="absolute -bottom-4 right-6 hidden rounded-3xl border border-slate-200 bg-white p-3 shadow-[0_20px_60px_rgba(15,23,42,0.08)] sm:block">
+        <p className="text-[10px] font-black uppercase tracking-[0.16em] text-slate-400">Quick actions</p>
+        <div className="mt-2 flex gap-1.5">
+          {["Track", "Audit", "Schemes"].map((item) => (
+            <span key={item} className="rounded-full bg-[#F8FAFC] px-2.5 py-1 text-[10px] font-black text-slate-700">
+              {item}
+            </span>
           ))}
         </div>
-      </section>
+      </div>
+    </div>
+  );
+}
 
-      {/* ── Features ── */}
-      <section id="features" className="py-24 bg-white">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <span className="inline-block text-xs font-bold text-[#1a56db] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100 mb-4">
-              ✦ AI-Powered Features
-            </span>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">
-              Everything you need to navigate
-              <br />
-              <span className="text-[#1a56db]">Indian bureaucracy</span>
-            </h2>
-            <p className="mt-4 text-slate-500 max-w-xl mx-auto">
-              From document analysis to scheme eligibility — BureauAI handles it all with the power of Google Gemini AI.
-            </p>
+function StatsStrip() {
+  const stats = [
+    { value: "2.4M+", label: "citizens assisted" },
+    { value: "450+", label: "schemes indexed" },
+    { value: "28", label: "states covered" },
+    { value: "98.7%", label: "guided accuracy" },
+  ];
+
+  return (
+    <section className="border-y border-slate-200 bg-white py-8">
+      <div className="mx-auto grid max-w-7xl grid-cols-2 gap-4 px-6 lg:grid-cols-4">
+        {stats.map((stat) => (
+          <div key={stat.label} className="rounded-3xl border border-slate-200 bg-[#F8FAFC] p-4">
+            <p className="text-3xl font-black tracking-tight text-[#0F172A]">{stat.value}</p>
+            <p className="mt-1 text-xs font-extrabold text-slate-500">{stat.label}</p>
           </div>
+        ))}
+      </div>
+    </section>
+  );
+}
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-            {features.map((f) => (
-              <div key={f.title} className="group p-6 bg-white rounded-2xl border border-slate-200 hover:border-[#1a56db]/30 hover:shadow-lg hover:shadow-blue-500/5 transition-all duration-300 hover:-translate-y-1">
-                <div className={`w-12 h-12 ${f.bg} rounded-2xl flex items-center justify-center text-2xl mb-5 group-hover:scale-110 transition-transform duration-300`}>
-                  {f.icon}
+function Features() {
+  const features = [
+    { icon: FileCheck2, title: "AI Document Audit", desc: "Check uploaded forms, identity proofs, and notices for readiness before you proceed." },
+    { icon: SearchCheck, title: "Scheme Eligibility Finder", desc: "Match citizen profiles against central and state welfare programs with clear reasons." },
+    { icon: Gauge, title: "Application Tracker", desc: "Follow public-service milestones with status, progress, and next-action guidance." },
+    { icon: Languages, title: "Legal Translator", desc: "Turn formal notices into readable language across supported Indian languages." },
+    { icon: MessageSquareText, title: "AI Copilot Chat", desc: "Ask procedural questions and get structured steps for documents and services." },
+    { icon: LockKeyhole, title: "Secure and Private", desc: "Built around authenticated sessions and privacy-conscious citizen workflows." },
+  ];
+
+  return (
+    <section id="features" className="bg-white py-16">
+      <div className="mx-auto max-w-7xl px-6">
+        <SectionHeader eyebrow="AI-powered features" title="A more confident way to navigate public services" subtitle="BureauAI organizes complex government workflows into clear, guided actions for citizens." />
+        <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {features.map((feature) => {
+            const Icon = feature.icon;
+            return (
+              <motion.div key={feature.title} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className={`rounded-3xl border border-slate-200 bg-white p-4 ${premiumShadow}`}>
+                <div className="flex h-10 w-10 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#1D4ED8]">
+                  <Icon className="h-4 w-4" />
                 </div>
-                <h3 className="font-bold text-slate-900 mb-2">{f.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{f.desc}</p>
-              </div>
-            ))}
-          </div>
+                <h3 className="mt-4 text-base font-black tracking-tight text-[#0F172A]">{feature.title}</h3>
+                <p className="mt-2 text-xs font-medium leading-5 text-slate-600">{feature.desc}</p>
+              </motion.div>
+            );
+          })}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ── Services Grid ── */}
-      <section id="services" className="py-24 bg-slate-50">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <span className="inline-block text-xs font-bold text-[#1a56db] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100 mb-4">
-              ✦ Government Services
-            </span>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">
-              Every service. One portal.
-            </h2>
-            <p className="mt-4 text-slate-500 max-w-xl mx-auto">
-              Get guidance for 450+ government services across all states and central departments.
-            </p>
-          </div>
+function Services({ user, destination }) {
+  const services = [
+    { name: "Aadhaar Card", icon: ShieldCheck, desc: "Enrolment, update, linking" },
+    { name: "PAN Card", icon: FileText, desc: "Apply, link, e-PAN guidance" },
+    { name: "Passport", icon: Globe2, desc: "Fresh, renewal, Tatkal support" },
+    { name: "Income Certificate", icon: FileCheck2, desc: "Revenue department workflow" },
+    { name: "Ration Card", icon: Building2, desc: "APL, BPL, AAY categories" },
+    { name: "Caste Certificate", icon: BadgeCheck, desc: "SC, ST, OBC documentation" },
+    { name: "Welfare Schemes", icon: Landmark, desc: "State and central benefits" },
+    { name: "Land Records", icon: LayoutDashboard, desc: "Property and RoR guidance" },
+  ];
 
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
-            {services.map((s) => (
-              <Link href={user ? (user.role === "admin" ? "/admin" : "/dashboard/tracker") : "/login"} key={s.name}
-                className="group bg-white p-5 rounded-2xl border border-slate-200 hover:border-[#1a56db]/40 hover:shadow-md transition-all text-center hover:-translate-y-0.5">
-                <div className="text-3xl mb-3">{s.icon}</div>
-                <p className="font-bold text-slate-900 text-sm">{s.name}</p>
-                <p className="text-[11px] text-slate-400 mt-1">{s.desc}</p>
-                <span className="inline-block mt-3 text-[10px] font-bold text-[#1a56db] group-hover:underline">
-                  Get started →
-                </span>
-              </Link>
-            ))}
-          </div>
+  return (
+    <section id="services" className="bg-[#F8FAFC] py-16">
+      <div className="mx-auto max-w-7xl px-6">
+        <SectionHeader eyebrow="Government services" title="One calm workspace for essential citizen services" subtitle="Start with a service, then let BureauAI organize the documents, eligibility, and timeline." />
+        <div id="schemes" className="mt-10 grid grid-cols-1 gap-3 sm:grid-cols-2 lg:grid-cols-4">
+          {services.map((service) => {
+            const Icon = service.icon;
+            return (
+              <motion.div key={service.name} whileHover={{ y: -4 }} transition={{ duration: 0.2 }}>
+                <Link href={user ? destination : "/login"} className="group block rounded-3xl border border-slate-200 bg-white p-3.5 transition hover:border-blue-200 hover:shadow-[0_20px_60px_rgba(15,23,42,0.08)]">
+                  <div className="flex items-start justify-between gap-3">
+                    <div className="flex h-9 w-9 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#1D4ED8]">
+                      <Icon className="h-4 w-4" />
+                    </div>
+                    <ArrowRight className="h-3.5 w-3.5 text-slate-300 transition group-hover:translate-x-1 group-hover:text-[#1D4ED8]" />
+                  </div>
+                  <p className="mt-3 text-sm font-black text-[#0F172A]">{service.name}</p>
+                  <p className="mt-1.5 text-xs font-medium leading-5 text-slate-500">{service.desc}</p>
+                </Link>
+              </motion.div>
+            );
+          })}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ── How It Works ── */}
-      <section id="about" className="py-24 bg-white">
-        <div className="max-w-5xl mx-auto px-6">
-          <div className="text-center mb-16">
-            <span className="inline-block text-xs font-bold text-[#1a56db] bg-blue-50 px-4 py-1.5 rounded-full border border-blue-100 mb-4">
-              ✦ How It Works
-            </span>
-            <h2 className="text-4xl font-black text-slate-900 tracking-tight">
-              Get started in 3 simple steps
-            </h2>
-          </div>
+function HowItWorks() {
+  const steps = [
+    { step: "01", title: "Create your account", desc: "Sign in securely and keep your citizen workspace ready for ongoing services." },
+    { step: "02", title: "Ask or upload", desc: "Use the AI copilot or upload documents to understand requirements and readiness." },
+    { step: "03", title: "Track and act", desc: "Follow milestones, alerts, recommendations, and next steps from one dashboard." },
+  ];
 
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
-            {[
-              { step: "01", title: "Create Account", desc: "Sign up free with your email. No Aadhaar or OTP required to start.", icon: "👤" },
-              { step: "02", title: "Ask or Upload", desc: "Chat with BureauAI or upload a document for instant AI-powered analysis.", icon: "💬" },
-              { step: "03", title: "Track & Apply", desc: "Get step-by-step guidance, track applications, and find eligible schemes.", icon: "🎯" },
-            ].map((s) => (
-              <div key={s.step} className="relative text-center">
-                <div className="w-16 h-16 bg-blue-50 border-2 border-[#1a56db]/20 rounded-2xl flex items-center justify-center text-3xl mx-auto mb-5">
-                  {s.icon}
-                </div>
-                <span className="absolute top-0 right-8 text-xs font-black text-slate-200">{s.step}</span>
-                <h3 className="font-black text-slate-900 text-lg mb-2">{s.title}</h3>
-                <p className="text-sm text-slate-500 leading-relaxed">{s.desc}</p>
-              </div>
-            ))}
-          </div>
+  return (
+    <section className="bg-white py-16">
+      <div className="mx-auto max-w-6xl px-6">
+        <SectionHeader eyebrow="How it works" title="Designed for repeated, practical use" subtitle="Simple enough for first-time users, structured enough for ongoing public-service tracking." />
+        <div className="mt-10 grid grid-cols-1 gap-4 md:grid-cols-3">
+          {steps.map((step) => (
+            <motion.div key={step.step} whileHover={{ y: -4 }} transition={{ duration: 0.2 }} className="rounded-3xl border border-slate-200 bg-white p-5 shadow-sm">
+              <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1D4ED8]">{step.step}</p>
+              <h3 className="mt-4 text-lg font-black tracking-tight text-[#0F172A]">{step.title}</h3>
+              <p className="mt-2 text-xs font-medium leading-5 text-slate-600">{step.desc}</p>
+            </motion.div>
+          ))}
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ── CTA Banner ── */}
-      <section className="py-20 bg-gradient-to-br from-[#1a56db] to-indigo-700 relative overflow-hidden">
-        <div className="absolute inset-0 opacity-10"
-          style={{
-            backgroundImage: "radial-gradient(circle, white 1px, transparent 1px)",
-            backgroundSize: "32px 32px"
-          }} />
-        <div className="relative max-w-4xl mx-auto px-6 text-center">
-          <h2 className="text-4xl font-black text-white mb-4 tracking-tight">
-            Start navigating smarter today
+function CTA({ user, loading, destination, onLogout }) {
+  return (
+    <section className="bg-[#F8FAFC] py-12">
+      <div className="mx-auto max-w-6xl px-6">
+        <div className="rounded-[32px] border border-slate-200 bg-white p-6 text-center shadow-[0_20px_60px_rgba(15,23,42,0.08)] md:p-8">
+          <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1D4ED8]">Start with clarity</p>
+          <h2 className="mx-auto mt-3 max-w-3xl text-3xl font-black leading-[1.2] tracking-tight text-[#0F172A] md:text-4xl">
+            Make government services easier to understand and act on.
           </h2>
-          <p className="text-blue-200 mb-8 text-lg">
-            Join 2.4 million+ citizens who use BureauAI to cut through red tape.
+          <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-600">
+            A clean AI-guided workspace for applications, schemes, documents, translations, and citizen notifications.
           </p>
-          <div className="flex flex-wrap justify-center gap-4 min-h-[56px]">
+          <div className="mt-6 flex min-h-[48px] flex-wrap justify-center gap-3">
             {!loading && (
-              <>
-                {user ? (
-                  <>
-                    <Link href={user.role === "admin" ? "/admin" : "/dashboard"}
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1a56db] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-lg text-sm hover:-translate-y-0.5">
-                      Go to Dashboard
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </Link>
-                    <button onClick={handleLogout}
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/20 text-sm">
-                      Logout
-                    </button>
-                  </>
-                ) : (
-                  <>
-                    <Link href="/signup"
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-white text-[#1a56db] font-black rounded-2xl hover:bg-blue-50 transition-all shadow-lg text-sm hover:-translate-y-0.5">
-                      Create Free Account
-                      <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                        <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M17 8l4 4m0 0l-4 4m4-4H3" />
-                      </svg>
-                    </Link>
-                    <Link href="/login"
-                      className="inline-flex items-center gap-2 px-8 py-4 bg-white/10 text-white font-bold rounded-2xl hover:bg-white/20 transition-all border border-white/20 text-sm">
-                      Sign In
-                    </Link>
-                  </>
-                )}
-              </>
+              user ? (
+                <>
+                  <PrimaryLink href={destination} large>Go to Dashboard</PrimaryLink>
+                  <motion.button whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }} onClick={onLogout} className="rounded-2xl border border-slate-200 px-6 py-3.5 text-sm font-extrabold text-slate-700">
+                    Logout
+                  </motion.button>
+                </>
+              ) : (
+                <>
+                  <PrimaryLink href="/signup" large>Create Free Account</PrimaryLink>
+                  <SecondaryLink href="/login" large>Sign In</SecondaryLink>
+                </>
+              )
             )}
           </div>
-          <p className="mt-6 text-blue-300 text-xs">
-            No credit card required · Free forever for citizens · Secured by SSL
-          </p>
         </div>
-      </section>
+      </div>
+    </section>
+  );
+}
 
-      {/* ── Footer ── */}
-      <footer className="bg-slate-900 py-12">
-        <div className="max-w-7xl mx-auto px-6">
-          <div className="flex flex-col md:flex-row items-center justify-between gap-6">
-            <div className="flex items-center gap-2.5">
-              <div className="w-7 h-7 rounded-lg bg-[#1a56db] flex items-center justify-center">
-                <svg className="w-4 h-4 text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                  <path d="M12 22s8-4 8-10V5l-8-3-8 3v7c0 6 8 10 8 10z" />
-                </svg>
-              </div>
-              <span className="font-bold text-white">Bureau<span className="text-blue-400">AI</span></span>
-            </div>
-
-            <p className="text-slate-500 text-sm">
-              © 2026 BureauAI · Ministry of Digital Governance · Government of India
-            </p>
-
-            <div className="flex items-center gap-6">
-              {["Privacy Policy", "Terms of Service", "Contact"].map((item) => (
-                <a key={item} href="#" className="text-slate-400 hover:text-white text-xs font-medium transition-colors">
-                  {item}
-                </a>
-              ))}
-            </div>
+function Footer() {
+  return (
+    <footer className="border-t border-slate-200 bg-white py-8">
+      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
+        <div className="flex items-center gap-2">
+          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEF4FF] text-[#1D4ED8]">
+            <ShieldCheck className="h-3.5 w-3.5" />
           </div>
+          <span className="text-xs font-black text-[#0F172A]">BureauAI</span>
         </div>
-      </footer>
+        <p className="text-center text-xs font-medium text-slate-500">2026 BureauAI. Citizen-focused AI government service assistance.</p>
+        <div className="flex gap-3 text-xs font-bold text-slate-500">
+          <a href="#">Privacy</a>
+          <a href="#">Terms</a>
+          <a href="#">Contact</a>
+        </div>
+      </div>
+    </footer>
+  );
+}
 
+function SectionHeader({ eyebrow, title, subtitle }) {
+  return (
+    <div className="mx-auto max-w-3xl text-center">
+      <p className="text-xs font-black uppercase tracking-[0.22em] text-[#1D4ED8]">{eyebrow}</p>
+      <h2 className="mt-3 text-3xl font-black leading-[1.2] tracking-tight text-[#0F172A] md:text-4xl">{title}</h2>
+      <p className="mx-auto mt-3 max-w-2xl text-sm font-medium leading-6 text-slate-600">{subtitle}</p>
     </div>
+  );
+}
+
+function PrimaryLink({ href, children, large = false }) {
+  return (
+    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+      <Link href={href} className={`inline-flex items-center gap-2 rounded-2xl bg-[#1D4ED8] font-extrabold text-white shadow-[0_14px_30px_rgba(29,78,216,0.22)] transition hover:bg-[#1E40AF] ${large ? "px-5 py-3 text-xs" : "px-3.5 py-2 text-xs"}`}>
+        {children}
+        <ArrowRight className="h-3.5 w-3.5" />
+      </Link>
+    </motion.div>
+  );
+}
+
+function SecondaryLink({ href, children, large = false }) {
+  return (
+    <motion.div whileHover={{ scale: 1.02 }} transition={{ duration: 0.2 }}>
+      <Link href={href} className={`inline-flex items-center rounded-2xl border border-slate-200 bg-white font-extrabold text-slate-700 transition hover:border-[#1D4ED8]/30 hover:text-[#1D4ED8] ${large ? "px-5 py-3 text-xs" : "px-3.5 py-2 text-xs"}`}>
+        {children}
+      </Link>
+    </motion.div>
   );
 }
