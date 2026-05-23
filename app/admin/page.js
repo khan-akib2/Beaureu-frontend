@@ -86,6 +86,7 @@ function AdminContent() {
   const tab = searchParams.get("tab") || "dashboard";
   const { admin } = useAdmin() || {};
   const isPrimaryAdmin = admin?.email === "bureauai@gmail.com";
+  const canManageSensitiveUsers = isPrimaryAdmin;
 
   const [analytics, setAnalytics] = useState({ usersCount: 0, docsCount: 0, approvedCount: 0, pendingCount: 0, rejectedCount: 0, aiProcessesCount: 0 });
   const [insights, setInsights] = useState(null);
@@ -120,65 +121,78 @@ function AdminContent() {
     setTimeout(() => setToast(null), 3500);
   };
 
+  const fetchWithTimeout = useCallback((url, options = {}, timeoutMs = 8000) => {
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), timeoutMs);
+    return fetch(url, { ...options, signal: controller.signal })
+      .finally(() => window.clearTimeout(timeout));
+  }, []);
+
   const fetchAdminData = useCallback(async () => {
     setLoading(true);
     try {
       // Always fetch analytics (lightweight) + only what the current tab needs
       const fetches = [
-        fetch(`${API}/api/admin/analytics`, { credentials: "include" }),
+        { type: "analytics", promise: fetchWithTimeout(`${API}/api/admin/analytics`, { credentials: "include" }) },
       ];
 
       if (tab === "users" || tab === "dashboard" || tab === "audit" || tab === "notifications") {
-        fetches.push(fetch(`${API}/api/admin/users`, { credentials: "include" }));
+        fetches.push({ type: "users", promise: fetchWithTimeout(`${API}/api/admin/users`, { credentials: "include" }) });
       }
       if (tab === "documents" || tab === "dashboard" || tab === "audit") {
-        fetches.push(fetch(`${API}/api/documents`, { credentials: "include" }));
+        fetches.push({ type: "documents", promise: fetchWithTimeout(`${API}/api/documents`, { credentials: "include" }) });
       }
       if (tab === "applications" || tab === "dashboard" || tab === "audit") {
-        fetches.push(fetch(`${API}/api/applications`, { credentials: "include" }));
+        fetches.push({ type: "applications", promise: fetchWithTimeout(`${API}/api/applications`, { credentials: "include" }) });
       }
 
-      const results = await Promise.all(fetches);
-      let ri = 0;
+      const results = await Promise.allSettled(fetches.map(item => item.promise));
+      let failedRequests = 0;
 
-      if (results[ri]?.ok) {
-        const d = await results[ri].json();
-        const s = d.stats || d.analytics || {};
-        setAnalytics({
-          usersCount: s.usersCount !== undefined ? s.usersCount : (s.totalUsers || 0),
-          docsCount: s.docsCount !== undefined ? s.docsCount : (s.totalDocuments || 0),
-          approvedCount: s.approvedCount !== undefined ? s.approvedCount : (s.appsByStatus?.approved || 0),
-          pendingCount: s.pendingCount !== undefined ? s.pendingCount : ((s.appsByStatus?.submitted || 0) + (s.appsByStatus?.under_review || 0)),
-          rejectedCount: s.rejectedCount !== undefined ? s.rejectedCount : (s.appsByStatus?.rejected || 0),
-          aiProcessesCount: s.aiProcessesCount !== undefined ? s.aiProcessesCount : 0,
-        });
-        if (d.insights) {
-          setInsights(d.insights);
+      for (let i = 0; i < results.length; i++) {
+        const type = fetches[i].type;
+        const result = results[i];
+        if (result.status !== "fulfilled" || !result.value?.ok) {
+          failedRequests++;
+          continue;
         }
-        if (d.chartData) {
-          setChartData(d.chartData);
+
+        const d = await result.value.json().catch(() => ({}));
+        if (type === "analytics") {
+          const s = d.stats || d.analytics || {};
+          setAnalytics({
+            usersCount: s.usersCount !== undefined ? s.usersCount : (s.totalUsers || 0),
+            docsCount: s.docsCount !== undefined ? s.docsCount : (s.totalDocuments || 0),
+            approvedCount: s.approvedCount !== undefined ? s.approvedCount : (s.appsByStatus?.approved || 0),
+            pendingCount: s.pendingCount !== undefined ? s.pendingCount : ((s.appsByStatus?.submitted || 0) + (s.appsByStatus?.under_review || 0)),
+            rejectedCount: s.rejectedCount !== undefined ? s.rejectedCount : (s.appsByStatus?.rejected || 0),
+            aiProcessesCount: s.aiProcessesCount !== undefined ? s.aiProcessesCount : 0,
+          });
+          if (d.insights) setInsights(d.insights);
+          if (d.chartData) setChartData(d.chartData);
+        }
+        if (type === "users" && d.users) setUsers(d.users);
+        if (type === "documents" && d.documents) setDocuments(d.documents);
+        if (type === "applications" && d.applications) {
+          setApplications(d.applications);
+          if (d.applications.length > 0) {
+            setSelectedApp(d.applications[0]);
+            setAppProgress(d.applications[0].progress);
+            setAppStatus(d.applications[0].status);
+          }
         }
       }
-      ri++;
 
-      for (const res of results.slice(1)) {
-        if (!res?.ok) { ri++; continue; }
-        const d = await res.json();
-        if (d.users) setUsers(d.users);
-        if (d.documents) setDocuments(d.documents);
-        if (d.applications) {
-          const apps = d.applications;
-          setApplications(apps);
-          if (apps.length > 0) { setSelectedApp(apps[0]); setAppProgress(apps[0].progress); setAppStatus(apps[0].status); }
-        }
-        ri++;
+      if (failedRequests > 0) {
+        triggerToast("Some admin data could not be loaded. Showing available data.", "error");
       }
     } catch (err) {
       console.error("Admin fetch error:", err);
+      triggerToast("Admin data failed to load.", "error");
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [tab, fetchWithTimeout]);
 
   useEffect(() => {
     let ignore = false;
@@ -251,7 +265,12 @@ function AdminContent() {
       const data = await res.json().catch(() => ({}));
       if (res.ok) { 
         setUsers(prev => prev.map(u => u._id === userId ? { ...u, role: nextRole } : u)); 
-        triggerToast(`Role changed to ${nextRole}.`); 
+        const emailTo = data.notificationEmailTo || "registered email";
+        triggerToast(
+          data.notificationEmailSent === false
+            ? `Role changed to ${nextRole}, but Gmail delivery failed for ${emailTo}. ${data.notificationEmailError || ""}`.trim()
+            : `Role changed to ${nextRole}. Email sent to ${emailTo}.`
+        );
       }
       else triggerToast(data.error || "Failed to change role.", "error");
     } catch { triggerToast("Error changing role.", "error"); }
@@ -744,31 +763,7 @@ function AdminContent() {
       {/* ── Users Tab ── */}
       {tab === "users" && (
         <div className="space-y-6">
-          {admin?.email !== "bureauai@gmail.com" ? (
-            <div className="bg-white border border-slate-200 rounded-3xl p-8 max-w-2xl mx-auto shadow-sm text-center relative overflow-hidden mt-8 animate-fade-in">
-              {/* Tricolor line for national security feel */}
-              <div className="absolute top-0 left-0 right-0 h-[3px] flex">
-                <div className="flex-1 bg-[#d97706]"></div>
-                <div className="flex-1 bg-slate-200"></div>
-                <div className="flex-1 bg-[#059669]"></div>
-              </div>
-              <div className="p-4 bg-amber-50 text-amber-600 rounded-full w-fit mx-auto mb-4 border border-amber-100">
-                <ShieldAlert className="w-12 h-12 animate-pulse" />
-              </div>
-              <h2 className="text-lg font-extrabold text-slate-900 font-sans tracking-tight">Super Admin Clearance Required</h2>
-              <p className="text-xs text-slate-500 mt-3 leading-relaxed font-sans max-w-md mx-auto">
-                Access to the Citizen Database and Identity Operations is restricted to the primary super administrator (<span className="font-bold text-slate-700">bureauai@gmail.com</span>). Secondary administrators do not have clearance to view user listings or manage permissions.
-              </p>
-              <div className="mt-8 flex justify-center gap-3">
-                <a href="/admin">
-                  <button className="px-5 py-2.5 rounded-xl border border-slate-200 text-xs font-bold text-slate-650 hover:bg-slate-50 hover:text-slate-800 transition-all font-sans">
-                    Return to Dashboard
-                  </button>
-                </a>
-              </div>
-            </div>
-          ) : (
-            <>
+          <>
               <div className="flex items-center justify-between flex-wrap gap-4 animate-fade-in">
                 <div>
                   <h2 className="text-base font-extrabold text-slate-800 tracking-tight flex items-center gap-2">
@@ -844,22 +839,26 @@ function AdminContent() {
                             </td>
                             <td className="px-6 py-4 whitespace-nowrap text-right">
                               <div className="flex items-center justify-end gap-2">
-                                <button 
-                                  onClick={() => handleToggleRole(u._id, u.role)}
-                                  className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all ${
-                                    u.role === "admin"
-                                      ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 shadow-xs" 
-                                      : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-250/70 shadow-xs"
-                                  }`}
-                                >
-                                  {u.role === "admin" ? "Demote Access" : "Clear Admin"}
-                                </button>
-                                <button 
-                                  onClick={() => handleDeleteUser(u._id)}
-                                  className="px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all bg-red-50 hover:bg-red-105 hover:text-red-800 text-red-700 border-red-200 shadow-xs"
-                                >
-                                  Delete Account
-                                </button>
+                                {canManageSensitiveUsers && (
+                                  <button 
+                                    onClick={() => handleToggleRole(u._id, u.role)}
+                                    className={`px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all ${
+                                      u.role === "admin"
+                                        ? "bg-amber-50 hover:bg-amber-100 text-amber-700 border-amber-200 shadow-xs" 
+                                        : "bg-emerald-50 hover:bg-emerald-100 text-emerald-700 border-emerald-250/70 shadow-xs"
+                                    }`}
+                                  >
+                                    {u.role === "admin" ? "Demote Access" : "Clear Admin"}
+                                  </button>
+                                )}
+                                {canManageSensitiveUsers && (
+                                  <button 
+                                    onClick={() => handleDeleteUser(u._id)}
+                                    className="px-3 py-1.5 text-[9px] font-black uppercase tracking-wider rounded-xl border transition-all bg-red-50 hover:bg-red-105 hover:text-red-800 text-red-700 border-red-200 shadow-xs"
+                                  >
+                                    Delete Account
+                                  </button>
+                                )}
                               </div>
                             </td>
                           </tr>
@@ -869,8 +868,7 @@ function AdminContent() {
                   </table>
                 </div>
               </div>
-            </>
-          )}
+          </>
         </div>
       )}
 

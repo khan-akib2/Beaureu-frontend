@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect, useRef } from "react";
+import React, { useState, useEffect, useRef, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import Button from "@/components/ui/Button";
@@ -30,6 +30,60 @@ export default function LoginPage() {
     useRef(null), useRef(null), useRef(null), 
     useRef(null), useRef(null), useRef(null)
   ];
+
+  const initializeGoogleSSO = useCallback((clientId) => {
+    window.google?.accounts.id.initialize({
+      client_id: clientId,
+      use_fedcm: false,
+      callback: async (response) => {
+        setIsGoogleLoading(true);
+        setError("");
+        try {
+          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`, {
+            credentials: "include",
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ credential: response.credential })
+          });
+          const data = await res.json().catch(() => ({}));
+          if (!res.ok) {
+            setError(data.error || "Google authentication failed.");
+          } else {
+            if (data.token) {
+              try {
+                window.sessionStorage.setItem('bureau_token', data.token);
+                document.cookie = "bureau_token=" + data.token + "; path=/; max-age=604800; SameSite=Lax";
+              } catch (e) {}
+            }
+            if (data.user?.role === "admin") {
+              router.push("/admin");
+            } else {
+              router.push("/dashboard");
+            }
+            router.refresh();
+          }
+        } catch {
+          setError("Google SSO link failed.");
+        } finally {
+          setIsGoogleLoading(false);
+        }
+      }
+    });
+
+    const btnContainer = document.getElementById("google-signin-button");
+    if (btnContainer) {
+      const width = btnContainer.offsetWidth;
+      const finalWidth = width && width > 200 ? Math.min(width, 400) : 384;
+      window.google?.accounts.id.renderButton(btnContainer, {
+        theme: "outline",
+        size: "large",
+        width: finalWidth,
+        text: "continue_with",
+        shape: "rectangular",
+        logo_alignment: "center"
+      });
+    }
+  }, [router]);
 
   // Timer Effect for OTP
   useEffect(() => {
@@ -88,7 +142,7 @@ export default function LoginPage() {
         setTimeout(setupGoogle, 50);
       }
     }
-  }, [step]);
+  }, [step, initializeGoogleSSO]);
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -101,7 +155,7 @@ export default function LoginPage() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email, password })
       });
-      const data = await res.json();
+      const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         if (data.requiresVerification) {
           setStep("verify");
@@ -226,60 +280,6 @@ export default function LoginPage() {
       }
     } catch {
       setError("Failed to connect for resending verification code.");
-    }
-  };
-
-  const initializeGoogleSSO = (clientId) => {
-    window.google?.accounts.id.initialize({
-      client_id: clientId,
-      use_fedcm: false,
-      callback: async (response) => {
-        setIsGoogleLoading(true);
-        setError("");
-        try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`, {
-            credentials: "include",
-            method: "POST",
-            headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ credential: response.credential })
-          });
-          const data = await res.json();
-          if (!res.ok) {
-            setError(data.error || "Google authentication failed.");
-          } else {
-            if (data.token) {
-              try {
-                window.sessionStorage.setItem('bureau_token', data.token);
-                document.cookie = "bureau_token=" + data.token + "; path=/; max-age=604800; SameSite=Lax";
-              } catch (e) {}
-            }
-            if (data.user?.role === "admin") {
-              router.push("/admin");
-            } else {
-              router.push("/dashboard");
-            }
-            router.refresh();
-          }
-        } catch {
-          setError("Google SSO link failed.");
-        } finally {
-          setIsGoogleLoading(false);
-        }
-      }
-    });
-
-    const btnContainer = document.getElementById("google-signin-button");
-    if (btnContainer) {
-      const width = btnContainer.offsetWidth;
-      const finalWidth = width && width > 200 ? Math.min(width, 400) : 384;
-      window.google?.accounts.id.renderButton(btnContainer, {
-        theme: "outline",
-        size: "large",
-        width: finalWidth,
-        text: "continue_with",
-        shape: "rectangular",
-        logo_alignment: "center"
-      });
     }
   };
 

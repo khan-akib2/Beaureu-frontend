@@ -39,21 +39,53 @@ export default function AdminLayout({ children }) {
     async function verifyAdminSession() {
       try {
         const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, { credentials: "include" });
-        if (!res.ok) { router.push("/login"); return; }
-        const data = await res.json();
+        if (!res.ok) { router.replace("/login"); return; }
+        const data = await res.json().catch(() => ({}));
         if (data.user?.role !== "admin") {
-          setAdmin(data.user || { role: "user" });
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
+          router.replace("/login");
           return;
         }
         setAdmin(data.user);
       } catch {
-        router.push("/login");
+        router.replace("/login");
       } finally {
         setLoading(false);
       }
     }
     verifyAdminSession();
   }, [router]);
+
+  useEffect(() => {
+    if (!admin || admin.role !== "admin") return;
+
+    const verifyRoleStillAdmin = async () => {
+      try {
+        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+          credentials: "include",
+          cache: "no-store",
+        });
+        const data = await res.json().catch(() => ({}));
+        if (!res.ok || data.user?.role !== "admin") {
+          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
+          router.replace("/login");
+          router.refresh();
+        }
+      } catch {
+        // Keep the current session on transient network errors.
+      }
+    };
+
+    const interval = window.setInterval(verifyRoleStillAdmin, 10000);
+    window.addEventListener("focus", verifyRoleStillAdmin);
+    document.addEventListener("visibilitychange", verifyRoleStillAdmin);
+
+    return () => {
+      window.clearInterval(interval);
+      window.removeEventListener("focus", verifyRoleStillAdmin);
+      document.removeEventListener("visibilitychange", verifyRoleStillAdmin);
+    };
+  }, [admin, router]);
 
   const handleLogout = async () => {
     await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include",  method: "POST" });
@@ -63,7 +95,7 @@ export default function AdminLayout({ children }) {
 
   const adminLinks = [
     { name: "Dashboard", path: "/admin", icon: Home },
-    ...(admin?.email === "bureauai@gmail.com" ? [{ name: "Users", path: "/admin?tab=users", icon: Users, hasSub: true }] : []),
+    { name: "Users", path: "/admin?tab=users", icon: Users, hasSub: true },
     { name: "Applications", path: "/admin?tab=applications", icon: FileText, hasSub: true },
     { name: "Reports & Analytics", path: "/admin?tab=analytics", icon: BarChart3 },
     { name: "Notifications", path: "/admin?tab=notifications", icon: Bell },
