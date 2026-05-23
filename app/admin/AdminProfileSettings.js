@@ -10,7 +10,7 @@ import {
   CheckCircle, AlertCircle, ShieldCheck, ShieldAlert
 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const FETCH_OPTS = { credentials: "include" };
 
 export default function AdminProfileSettings() {

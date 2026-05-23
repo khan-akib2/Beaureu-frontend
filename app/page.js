@@ -13,6 +13,7 @@ import {
   ChevronRight,
   CircleAlert,
   Clock3,
+  ExternalLink,
   FileCheck2,
   FileText,
   Gauge,
@@ -93,25 +94,19 @@ export default function LandingPage() {
   );
 }
 
-function Navbar({ user, loading, destination, onLogout }) {
+export function Navbar({ user, loading, destination, onLogout }) {
   return (
     <nav className="fixed left-0 right-0 top-0 z-50 h-[72px] border-b border-slate-200 bg-white">
       <div className="mx-auto flex h-full max-w-7xl items-center justify-between px-6">
-        <Link href="/" className="flex items-center gap-2.5">
-          <div className="flex h-9 w-9 items-center justify-center rounded-2xl border border-blue-100 bg-[#EEF4FF] text-[#1D4ED8]">
-            <ShieldCheck className="h-4 w-4" />
-          </div>
-          <div>
-            <div className="text-base font-black tracking-tight text-[#0F172A]">BureauAI</div>
-            <div className="text-[10px] font-bold uppercase tracking-[0.16em] text-slate-500">Citizen Platform</div>
-          </div>
+        <Link href="/" className="flex items-center">
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-9 w-auto object-contain" />
         </Link>
 
         <div className="hidden items-center gap-6 md:flex">
           {[
-            ["Services", "#services"],
-            ["Features", "#features"],
-            ["Schemes", "#schemes"],
+            ["Services", "/services"],
+            ["Features", "/features"],
+            ["Schemes", "/schemes"],
             ["Dashboard", user ? destination : "/login"],
           ].map(([label, href]) => (
             <Link key={label} href={href} className="text-xs font-bold text-slate-600 transition-colors hover:text-[#1D4ED8]">
@@ -158,8 +153,16 @@ function Hero({ user, loading, destination, onLogout }) {
   return (
     <section className="relative overflow-hidden bg-[linear-gradient(180deg,#FFFFFF,#F8FAFC)] pt-[72px]">
       <div className="absolute inset-x-0 top-0 h-64 bg-[radial-gradient(circle_at_50%_0%,rgba(29,78,216,0.14),transparent_58%)]" />
-      <div className="absolute right-[-12rem] top-24 h-[34rem] w-[34rem] rounded-full bg-blue-100/40 blur-3xl" />
-      <div className="absolute left-[-14rem] top-48 h-[28rem] w-[28rem] rounded-full bg-teal-100/30 blur-3xl" />
+      <motion.div
+        animate={{ y: [0, -25, 0], scale: [1, 1.05, 1] }}
+        transition={{ duration: 8, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-[-12rem] top-24 h-[34rem] w-[34rem] rounded-full bg-blue-100/40 blur-3xl pointer-events-none"
+      />
+      <motion.div
+        animate={{ y: [0, 20, 0], scale: [1, 0.95, 1] }}
+        transition={{ duration: 7, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-[-14rem] top-48 h-[28rem] w-[28rem] rounded-full bg-teal-100/30 blur-3xl pointer-events-none"
+      />
       <div
         className="absolute inset-0 opacity-[0.035]"
         style={{
@@ -178,17 +181,7 @@ function Hero({ user, loading, destination, onLogout }) {
           <motion.h1 variants={fadeUp} className="max-w-[1080px] text-[42px] font-black leading-[1.08] tracking-tight text-[#0F172A] sm:text-[48px] xl:text-[50px] 2xl:text-[56px]">
             Navigate India&apos;s
             <br />
-            <span className="relative inline-block">
-              Government Services
-              <span className="absolute -bottom-2 left-1 right-2 h-2 rounded-full bg-[#1D4ED8]/12">
-                <motion.span
-                  initial={{ width: 0 }}
-                  animate={{ width: "100%" }}
-                  transition={{ duration: 0.5, delay: 0.18, ease: "easeOut" }}
-                  className="block h-full rounded-full bg-[#1D4ED8]/22"
-                />
-              </span>
-            </span>
+            Government Services
             <br />
             with{" "}
             <span className="whitespace-nowrap bg-gradient-to-r from-[#1D4ED8] to-[#0F766E] bg-clip-text text-transparent">
@@ -236,7 +229,16 @@ function Hero({ user, loading, destination, onLogout }) {
           </motion.div>
         </motion.div>
 
-        <motion.div initial={{ opacity: 0, x: 24 }} animate={{ opacity: 1, x: 0 }} transition={{ duration: 0.2, delay: 0.08 }} className="relative mx-auto w-full max-w-[720px] xl:max-w-none">
+        <motion.div
+          initial={{ opacity: 0, x: 24 }}
+          animate={{ opacity: 1, x: 0, y: [0, -8, 0] }}
+          transition={{
+            opacity: { duration: 0.3 },
+            x: { duration: 0.3 },
+            y: { duration: 4, repeat: Infinity, ease: "easeInOut" }
+          }}
+          className="relative mx-auto w-full max-w-[720px] xl:max-w-none"
+        >
           <CommandCenter />
         </motion.div>
       </div>
@@ -544,22 +546,66 @@ function CTA({ user, loading, destination, onLogout }) {
   );
 }
 
-function Footer() {
+export function Footer() {
   return (
-    <footer className="border-t border-slate-200 bg-white py-8">
-      <div className="mx-auto flex max-w-7xl flex-col items-center justify-between gap-4 px-6 md:flex-row">
-        <div className="flex items-center gap-2">
-          <div className="flex h-8 w-8 items-center justify-center rounded-xl bg-[#EEF4FF] text-[#1D4ED8]">
-            <ShieldCheck className="h-3.5 w-3.5" />
+    <footer className="border-t border-slate-200 bg-slate-900 text-slate-400 py-16">
+      <div className="mx-auto max-w-7xl px-6 grid grid-cols-1 md:grid-cols-4 gap-10">
+        {/* Column 1: Brand & Description */}
+        <div className="space-y-4">
+          <div className="flex items-center">
+            <img src="/logo.jpg" alt="BureauAI Logo" className="h-8 w-auto object-contain bg-white p-1 rounded-lg" />
           </div>
-          <span className="text-xs font-black text-[#0F172A]">BureauAI</span>
+          <p className="text-xs leading-relaxed text-slate-400">
+            Empowering Indian citizens with intelligent, AI-guided compliance verification, welfare scheme discovery, and application milestone tracking.
+          </p>
+          <p className="text-[10px] text-slate-500 font-bold uppercase tracking-wider">
+            An Independent Citizen Platform
+          </p>
         </div>
-        <p className="text-center text-xs font-medium text-slate-500">2026 BureauAI. Citizen-focused AI government service assistance.</p>
-        <div className="flex gap-3 text-xs font-bold text-slate-500">
-          <a href="#">Privacy</a>
-          <a href="#">Terms</a>
-          <a href="#">Contact</a>
+
+        {/* Column 2: Platform Links */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider">Platform Links</h4>
+          <ul className="space-y-2 text-xs">
+            <li><Link href="/" className="hover:text-white transition-colors">Home Page</Link></li>
+            <li><Link href="/services" className="hover:text-white transition-colors">Supported Services</Link></li>
+            <li><Link href="/features" className="hover:text-white transition-colors">AI Capabilities</Link></li>
+            <li><Link href="/schemes" className="hover:text-white transition-colors">Welfare Schemes</Link></li>
+            <li><Link href="/login" className="hover:text-white transition-colors">Citizen Login</Link></li>
+          </ul>
         </div>
+
+        {/* Column 3: Government Portals */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider">Official Gov Portals</h4>
+          <ul className="space-y-2 text-xs">
+            <li><a href="https://myaadhaar.uidai.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">UIDAI (MyAadhaar) <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://www.incometax.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">Income Tax e-Filing <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://scholarships.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">National Scholarship Portal <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://www.digilocker.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">DigiLocker India <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://passportindia.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">Passport Seva <ExternalLink className="w-3 h-3" /></a></li>
+          </ul>
+        </div>
+
+        {/* Column 4: Help & Directory */}
+        <div className="space-y-3">
+          <h4 className="text-xs font-black text-white uppercase tracking-wider">Help & Directory</h4>
+          <ul className="space-y-2 text-xs">
+            <li><a href="https://www.india.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">National Portal of India <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://www.myscheme.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">myScheme Portal <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://sarathi.parivahan.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">Sarathi Parivahan <ExternalLink className="w-3 h-3" /></a></li>
+            <li><a href="https://pmjay.gov.in/" target="_blank" rel="noreferrer" className="hover:text-white transition-colors flex items-center gap-1">Ayushman Bharat PMJAY <ExternalLink className="w-3 h-3" /></a></li>
+          </ul>
+        </div>
+      </div>
+
+      <div className="mx-auto max-w-7xl px-6 border-t border-slate-800 mt-12 pt-8 flex flex-col md:flex-row items-center justify-between gap-4 text-xs">
+        <p className="text-slate-500 text-center md:text-left">
+          &copy; 2026 BureauAI. Designed to simplify citizen document verification and public scheme navigation.
+        </p>
+        <p className="text-slate-600 text-[10px] text-center md:text-right max-w-md">
+          Disclaimer: BureauAI is an independent citizen assistance portal. Government logo trademarks, links, and portals referenced are properties of their respective departments.
+        </p>
       </div>
     </footer>
   );

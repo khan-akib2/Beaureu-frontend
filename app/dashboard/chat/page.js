@@ -11,7 +11,7 @@ import {
 import { useUser } from "../layout";
 import { TRANSLATIONS } from "../../../lib/translations";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const WELCOME_MESSAGES = {
   en: "Namaste! I am **BureauAI**, your Indian Government Process Assistant.\n\nAsk me how to apply for schemes, update cards (like Aadhaar/PAN), simplify government notices, or what documents you need to visit a Tahsildar office. How can I guide you today?",

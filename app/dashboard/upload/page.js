@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import { Card, CardHeader, CardTitle, CardDescription, CardContent } from "@/components/ui/Card";
 import Button from "@/components/ui/Button";
 import Badge from "@/components/ui/Badge";
@@ -15,7 +15,10 @@ import {
   Link as LinkIcon
 } from "lucide-react";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function DocumentUploadPage() {
+  const fileInputRef = useRef(null);
   const [file, setFile] = useState(null);
   const [dragActive, setDragActive] = useState(false);
   const [uploading, setUploading] = useState(false);
@@ -26,7 +29,7 @@ export default function DocumentUploadPage() {
 
   async function fetchDocuments() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, { credentials: "include" });
+      const res = await fetch(`${API}/api/documents`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setDocuments(data.documents || []);
@@ -116,7 +119,7 @@ export default function DocumentUploadPage() {
       const formData = new FormData();
       formData.append("file", file);
 
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents`, {
+      const res = await fetch(`${API}/api/documents`, {
         credentials: "include", 
         method: "POST",
         body: formData
@@ -143,7 +146,7 @@ export default function DocumentUploadPage() {
 
   const handleDelete = async (docId) => {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/documents/${docId}`, { method: "DELETE", credentials: "include" });
+      const res = await fetch(`${API}/api/documents/${docId}`, { method: "DELETE", credentials: "include" });
       if (res.ok) {
         const updatedList = documents.filter((d) => d._id !== docId);
         setDocuments(updatedList);
@@ -187,10 +190,10 @@ export default function DocumentUploadPage() {
                     ? "border-[#1a56db] bg-blue-50" 
                     : "border-slate-300 hover:border-[#1a56db] bg-slate-50"
                   }`}
-                  onClick={() => document.getElementById("file-picker").click()}
+                  onClick={() => fileInputRef.current?.click()}
                 >
                   <input
-                    id="file-picker"
+                    ref={fileInputRef}
                     type="file"
                     className="hidden"
                     accept="image/*,application/pdf"
@@ -423,6 +426,26 @@ export default function DocumentUploadPage() {
                     </ul>
                   </div>
 
+                  {/* AI Step-by-Step Resolution Guide for Incomplete Documents */}
+                  {selectedDoc.status === "incomplete" && selectedDoc.missingRequirements && selectedDoc.missingRequirements.length > 0 && (
+                    <div className="mt-4 p-4 rounded-2xl border border-amber-250 bg-amber-50/20 space-y-3">
+                      <div className="flex items-center gap-2">
+                        <Sparkles className="w-4 h-4 text-amber-600 animate-pulse" />
+                        <h4 className="text-xs font-black text-amber-900">AI Step-by-Step Resolution Guide</h4>
+                      </div>
+                      <div className="space-y-2.5">
+                        {selectedDoc.missingRequirements.map((req, idx) => (
+                          <div key={idx} className="bg-white p-3.5 rounded-xl border border-slate-200/80 shadow-xs space-y-1">
+                            <p className="font-extrabold text-slate-800 text-[11px]">How to resolve: &quot;{req}&quot;</p>
+                            <p className="text-slate-550 font-semibold leading-relaxed text-[10px]">
+                              {getResolutionStepsForRequirement(req, selectedDoc.documentType)}
+                            </p>
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+
                 </CardContent>
               </Card>
             </div>
@@ -443,3 +466,31 @@ export default function DocumentUploadPage() {
     </div>
   );
 }
+
+const getResolutionStepsForRequirement = (req, documentType) => {
+  const norm = req.toLowerCase();
+  const docNorm = (documentType || "").toLowerCase();
+
+  if (norm.includes("signature")) {
+    return "The digital signature is not validated. To verify, open the downloaded PDF in Adobe Acrobat Reader, right-click the signature field, select 'Validate Signature', and add the certificate to your 'Trusted Certificates' list.";
+  }
+  if (norm.includes("approving authority") || norm.includes("designation")) {
+    if (docNorm.includes("gst")) {
+      return "The designation of the approving authority is unverified. Ensure you have downloaded the official 'Form GST REG-06' directly from the GST Portal, which contains the signature and officer designation in Annexure B.";
+    }
+    return "The approving authority name or designation is missing. Ensure you are uploading a signed copy of the certificate issued by the competent authority (e.g. Tahsildar or Gazetted Officer).";
+  }
+  if (norm.includes("jurisdictional") || norm.includes("office")) {
+    if (docNorm.includes("gst")) {
+      return "The jurisdictional range/center details are missing. Log into the GST portal, go to Services > User Services > View My Submission/Profile, or verify your GSTIN details on the public Search Taxpayer directory.";
+    }
+    return "The jurisdictional office details are missing. Locate the issuing range or district sub-division office on the certificate, or check your profile at the state's e-District portal.";
+  }
+  if (norm.includes("stamp") || norm.includes("seal")) {
+    return "The official department seal/stamp is not clearly visible. Please upload a high-resolution, color scan of the document. If it is a digital copy, ensure it is downloaded directly from the official portal without compression.";
+  }
+  if (norm.includes("validity") || norm.includes("expire")) {
+    return "The document validity period has expired or is unverified. Apply for a renewal certificate through the revenue office, or download the latest valid copy via DigiLocker.";
+  }
+  return "Please re-upload a clear, full-page scan of the document. Ensure all corners are visible, text is highly legible, and all stamps, signatures, and government seals are not cut off.";
+};

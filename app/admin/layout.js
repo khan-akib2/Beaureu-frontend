@@ -29,6 +29,8 @@ import {
 const AdminContext = createContext(null);
 export const useAdmin = () => useContext(AdminContext);
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function AdminLayout({ children }) {
   const router = useRouter();
   const pathname = usePathname();
@@ -39,11 +41,11 @@ export default function AdminLayout({ children }) {
   useEffect(() => {
     async function verifyAdminSession() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, { credentials: "include" });
+        const res = await fetch(`${API}/api/auth/me`, { credentials: "include" });
         if (!res.ok) { router.replace("/login"); return; }
         const data = await res.json().catch(() => ({}));
         if (data.user?.role !== "admin") {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
+          await fetch(`${API}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
           router.replace("/login");
           return;
         }
@@ -62,13 +64,13 @@ export default function AdminLayout({ children }) {
 
     const verifyRoleStillAdmin = async () => {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, {
+        const res = await fetch(`${API}/api/auth/me`, {
           credentials: "include",
           cache: "no-store",
         });
         const data = await res.json().catch(() => ({}));
         if (!res.ok || data.user?.role !== "admin") {
-          await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
+          await fetch(`${API}/api/auth/logout`, { credentials: "include", method: "POST" }).catch(() => {});
           router.replace("/login");
           router.refresh();
         }
@@ -89,7 +91,7 @@ export default function AdminLayout({ children }) {
   }, [admin, router]);
 
   const handleLogout = async () => {
-    await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/logout`, { credentials: "include",  method: "POST" });
+    await fetch(`${API}/api/auth/logout`, { credentials: "include",  method: "POST" });
     router.push("/login");
     router.refresh();
   };
@@ -109,9 +111,7 @@ export default function AdminLayout({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#0a192f]">
         <div className="flex flex-col items-center gap-3">
-          <div className="w-12 h-12 rounded-xl bg-blue-600 flex items-center justify-center animate-pulse">
-            <ShieldAlert className="w-6 h-6 text-white" />
-          </div>
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-12 w-auto object-contain bg-white p-1 rounded-xl shadow-lg animate-pulse" />
           <p className="text-sm font-semibold text-slate-350 font-sans">Verifying credentials...</p>
         </div>
       </div>
@@ -230,19 +230,8 @@ function SidebarContent({ pathname, handleLogout, adminLinks }) {
     <div className="flex flex-col h-full bg-[#0a192f] text-slate-300 font-sans select-none justify-between overflow-hidden">
       <div className="flex-1 overflow-y-auto min-h-0">
         {/* Emblem & Logo Header */}
-        <div className="px-6 py-5 border-b border-slate-800/60 flex items-center gap-3 bg-slate-950/20">
-          <div className="w-9 h-9 flex-shrink-0 flex items-center justify-center bg-gradient-to-br from-amber-500/15 via-white/5 to-emerald-500/15 rounded-xl p-1.5 border border-white/10 shadow-inner">
-            <svg className="w-full h-full text-white" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.5">
-              <circle cx="12" cy="12" r="10" stroke="white" strokeWidth="1" opacity="0.3" />
-              <circle cx="12" cy="12" r="3" stroke="#3b82f6" strokeWidth="1.5" />
-              <path d="M12 2v20M2 12h20" stroke="white" strokeWidth="0.8" opacity="0.2" />
-              <path d="M12 2l2 4 4 2-4 2-2 4-2-4-4-2 4-2z" fill="white" opacity="0.5" />
-            </svg>
-          </div>
-          <div>
-            <div className="font-black text-white text-sm tracking-wider leading-none">BUREAU<span className="text-[#1a56db]">AI</span></div>
-            <p className="text-[9px] text-slate-400 font-bold uppercase tracking-widest leading-none mt-1">Govt of India</p>
-          </div>
+        <div className="px-6 py-5 border-b border-slate-800/60 flex items-center bg-slate-950/20">
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-9 w-auto object-contain bg-white p-1 rounded-xl" />
         </div>
 
         {/* Navigation list */}

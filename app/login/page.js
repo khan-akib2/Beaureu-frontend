@@ -7,8 +7,10 @@ import Button from "@/components/ui/Button";
 import Input from "@/components/ui/Input";
 import { 
   Shield, AlertTriangle, Lock, ArrowRight, CheckCircle, 
-  Mail, ArrowLeft, RefreshCw, Send 
+  Mail, ArrowLeft, RefreshCw, Send, KeyRound 
 } from "lucide-react";
+
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 export default function LoginPage() {
   const router = useRouter();
@@ -20,10 +22,14 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const [isGoogleLoading, setIsGoogleLoading] = useState(false);
 
-  // OTP Verification States (in case account is unverified)
-  const [step, setStep] = useState("login"); // "login" or "verify"
+  const [step, setStep] = useState("login"); // "login", "verify", "forgot", "reset"
   const [otpValues, setOtpValues] = useState(["", "", "", "", "", ""]);
   const [resendTimer, setResendTimer] = useState(0);
+  const [demoOtp, setDemoOtp] = useState("");
+
+  const [newPassword, setNewPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
+  const [successMessage, setSuccessMessage] = useState("");
 
 
   const otpRefs = [
@@ -39,7 +45,7 @@ export default function LoginPage() {
         setIsGoogleLoading(true);
         setError("");
         try {
-          const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/google`, {
+          const res = await fetch(`${API}/api/auth/google`, {
             credentials: "include",
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -102,7 +108,7 @@ export default function LoginPage() {
   useEffect(() => {
     async function checkSession() {
       try {
-        const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/me`, { credentials: "include" });
+        const res = await fetch(`${API}/api/auth/me`, { credentials: "include" });
         if (res.ok) {
           const data = await res.json();
           if (data.user?.role === "admin") {
@@ -117,6 +123,23 @@ export default function LoginPage() {
     }
     checkSession();
   }, [router]);
+
+  // Handle URL query parameters for forgot-password redirect from signup
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const stepParam = params.get("step");
+      const emailParam = params.get("email");
+      if (stepParam === "forgot") {
+        setStep("forgot");
+        setError("");
+        setSuccessMessage("");
+      }
+      if (emailParam) {
+        setEmail(emailParam);
+      }
+    }
+  }, []);
 
   // Load Google Identity Services script on mount / step change for synchronous rendering
   useEffect(() => {
@@ -149,7 +172,7 @@ export default function LoginPage() {
     if (!email || !password) { setError("Please fill in all fields."); return; }
     setError(""); setIsLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/login`, {
+      const res = await fetch(`${API}/api/auth/login`, {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -160,6 +183,7 @@ export default function LoginPage() {
         if (data.requiresVerification) {
           setStep("verify");
           setResendTimer(60);
+          if (data.otp) setDemoOtp(data.otp);
           setOtpValues(["", "", "", "", "", ""]);
         } else {
           setError(data.error || "Authentication failed.");
@@ -235,7 +259,7 @@ export default function LoginPage() {
     setError("");
     setIsLoading(true);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/verify-otp`, {
+      const res = await fetch(`${API}/api/auth/verify-otp`, {
         credentials: "include",
         method: "POST",
         headers: { "Content-Type": "application/json" },
@@ -269,7 +293,8 @@ export default function LoginPage() {
     setError("");
     setResendTimer(60);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/auth/resend-otp`, {
+      const endpoint = step === "reset" ? "/api/auth/forgot-password" : "/api/auth/resend-otp";
+      const res = await fetch(`${API}${endpoint}`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email })
@@ -277,9 +302,95 @@ export default function LoginPage() {
       const data = await res.json();
       if (!res.ok) {
         setError(data.error || "Failed to resend verification code.");
+      } else {
+        if (data.otp) setDemoOtp(data.otp);
       }
     } catch {
       setError("Failed to connect for resending verification code.");
+    }
+  };
+
+  const handleForgotPassword = async (e) => {
+    e.preventDefault();
+    if (!email) { setError("Please enter your email address."); return; }
+    setError("");
+    setSuccessMessage("");
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/forgot-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Failed to initiate password reset.");
+      } else {
+        setStep("reset");
+        setResendTimer(60);
+        setOtpValues(["", "", "", "", "", ""]);
+        setNewPassword("");
+        setConfirmPassword("");
+        if (data.otp) setDemoOtp(data.otp);
+      }
+    } catch {
+      setError("Unable to connect to authentication server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleResetPassword = async (e) => {
+    e.preventDefault();
+    const fullOtp = otpValues.join("");
+    if (fullOtp.length < 6) {
+      setError("Please enter the complete 6-digit verification code.");
+      return;
+    }
+    if (!newPassword || !confirmPassword) {
+      setError("Please fill in all fields.");
+      return;
+    }
+    if (newPassword.length < 6) {
+      setError("Password must be at least 6 characters.");
+      return;
+    }
+    if (newPassword !== confirmPassword) {
+      setError("Passwords do not match.");
+      return;
+    }
+    setError("");
+    setSuccessMessage("");
+    setIsLoading(true);
+    try {
+      const res = await fetch(`${API}/api/auth/reset-password`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, otp: fullOtp, password: newPassword })
+      });
+      const data = await res.json().catch(() => ({}));
+      if (!res.ok) {
+        setError(data.error || "Failed to reset password.");
+      } else {
+        setStep("login");
+        setSuccessMessage("Your password has been successfully reset. You can now log in.");
+        // Clear forms
+        setPassword("");
+        setNewPassword("");
+        setConfirmPassword("");
+        setDemoOtp("");
+      }
+    } catch {
+      setError("Unable to connect to authentication server.");
+    } finally {
+      setIsLoading(false);
+    }
+  };
+
+  const handleDemoAutofill = () => {
+    if (demoOtp && demoOtp.length === 6) {
+      setOtpValues(demoOtp.split(""));
+      otpRefs[5].current?.focus();
     }
   };
 
@@ -291,11 +402,8 @@ export default function LoginPage() {
         <div className="absolute -left-8 bottom-20 w-64 h-64 rounded-full bg-white/5" />
         <div className="absolute right-8 bottom-10 w-32 h-32 rounded-full bg-white/5" />
 
-        <div className="flex items-center gap-3 mb-12 relative z-10">
-          <div className="w-9 h-9 rounded-xl bg-white/20 flex items-center justify-center">
-            <Shield className="w-5 h-5 text-white" />
-          </div>
-          <span className="text-white font-bold text-lg">Bureau<span className="text-blue-200">AI</span></span>
+        <div className="mb-12 relative z-10 flex items-center">
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-10 w-auto object-contain bg-white p-1 rounded-xl" />
         </div>
 
         <div className="relative z-10 flex-1 flex flex-col justify-center">
@@ -325,11 +433,8 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col justify-center items-center p-6 sm:p-10">
         <div className="w-full max-w-md">
           {/* Mobile Logo */}
-          <div className="lg:hidden flex items-center gap-2.5 mb-8">
-            <div className="w-8 h-8 rounded-lg bg-[#1a56db] flex items-center justify-center">
-              <Shield className="w-4 h-4 text-white" />
-            </div>
-            <span className="font-bold text-slate-900">Bureau<span className="text-[#1a56db]">AI</span></span>
+          <div className="lg:hidden flex items-center mb-8">
+            <img src="/logo.jpg" alt="BureauAI Logo" className="h-9 w-auto object-contain" />
           </div>
 
           {step === "login" ? (
@@ -351,6 +456,13 @@ export default function LoginPage() {
                     </div>
                   )}
 
+                  {successMessage && (
+                    <div className="p-3.5 rounded-xl bg-emerald-50 border border-emerald-200 text-emerald-700 text-xs flex items-center gap-2.5 font-semibold">
+                      <CheckCircle className="w-4 h-4 flex-shrink-0 text-emerald-600" />
+                      <span>{successMessage}</span>
+                    </div>
+                  )}
+
                   <Input label="Email Address" id="email" type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="you@bureauai.in" autoComplete="email" required />
                   <Input label="Password" id="password" type="password" value={password} onChange={e => setPassword(e.target.value)} placeholder="••••••••" autoComplete="current-password" required />
 
@@ -359,7 +471,7 @@ export default function LoginPage() {
                       <input type="checkbox" defaultChecked className="rounded border-slate-300 text-[#1a56db]" />
                       Remember me
                     </label>
-                    <a href="#" onClick={e => { e.preventDefault(); setError("Recovery link sent. (Demo)"); }} className="text-[#1a56db] font-semibold hover:underline">
+                    <a href="#" onClick={e => { e.preventDefault(); setStep("forgot"); setError(""); setSuccessMessage(""); }} className="text-[#1a56db] font-semibold hover:underline">
                       Forgot password?
                     </a>
                   </div>
@@ -376,6 +488,155 @@ export default function LoginPage() {
 
                 <div className="mt-5 flex justify-center">
                   <div id="google-signin-button" className="w-full flex justify-center min-h-[44px]" />
+                </div>
+              </div>
+            </>
+          ) : step === "forgot" ? (
+            <>
+              <div className="mb-8">
+                <button 
+                  onClick={() => { setStep("login"); setError(""); setSuccessMessage(""); }} 
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-medium mb-3 group"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back to Login
+                </button>
+                <h1 className="text-2xl font-bold text-slate-900">Recover your password</h1>
+                <p className="text-slate-500 text-sm mt-1">
+                  Enter your email address and we&apos;ll send you a 6-digit recovery OTP.
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+                <form onSubmit={handleForgotPassword} className="space-y-5">
+                  {error && (
+                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 font-semibold">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <Input 
+                    label="Email Address" 
+                    id="forgot-email" 
+                    type="email" 
+                    value={email} 
+                    onChange={e => setEmail(e.target.value)} 
+                    placeholder="you@bureauai.in" 
+                    autoComplete="email" 
+                    required 
+                  />
+
+                  <Button type="submit" className="w-full justify-center gap-2" isLoading={isLoading}>
+                    Send Reset Code <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </form>
+              </div>
+            </>
+          ) : step === "reset" ? (
+            <>
+              <div className="mb-8">
+                <button 
+                  onClick={() => { setStep("forgot"); setError(""); setSuccessMessage(""); }} 
+                  className="flex items-center gap-1.5 text-xs text-slate-500 hover:text-slate-800 transition-colors font-medium mb-3 group"
+                >
+                  <ArrowLeft className="w-3.5 h-3.5 group-hover:-translate-x-0.5 transition-transform" /> Back to Email Entry
+                </button>
+                <h1 className="text-2xl font-bold text-slate-900 flex items-center gap-2.5">
+                  <KeyRound className="w-6 h-6 text-[#1a56db]" /> Reset your password
+                </h1>
+                <p className="text-slate-500 text-sm mt-1.5">
+                  We&apos;ve sent a 6-digit recovery code to <strong className="text-slate-800">{email}</strong>
+                </p>
+              </div>
+
+              <div className="bg-white rounded-2xl border border-slate-200 shadow-sm p-8">
+                <form onSubmit={handleResetPassword} className="space-y-6">
+                  {error && (
+                    <div className="p-3.5 rounded-xl bg-red-50 border border-red-200 text-red-700 text-xs flex items-center gap-2.5 font-semibold">
+                      <AlertTriangle className="w-4 h-4 flex-shrink-0" />
+                      <span>{error}</span>
+                    </div>
+                  )}
+
+                  <div className="space-y-2">
+                    <label className="text-xs font-bold text-slate-400 uppercase tracking-wider block text-center mb-1">
+                      Recovery Code (OTP)
+                    </label>
+                    <div className="flex justify-between gap-2.5" onPaste={handleOtpPaste}>
+                      {otpValues.map((val, idx) => (
+                        <input
+                           key={idx}
+                           ref={otpRefs[idx]}
+                           type="text"
+                           pattern="[0-9]*"
+                           inputMode="numeric"
+                           value={val}
+                           onFocus={e => e.target.select()}
+                           onChange={e => handleOtpChange(idx, e.target.value)}
+                           onKeyDown={e => handleOtpKeyDown(idx, e)}
+                           className="w-12 h-14 sm:w-14 sm:h-16 text-center text-xl font-bold text-slate-900 border border-slate-200 rounded-xl bg-slate-50/50 focus:bg-white focus:border-[#1a56db] focus:ring-4 focus:ring-blue-500/10 focus:outline-none transition-all shadow-sm"
+                           required
+                        />
+                      ))}
+                    </div>
+                  </div>
+
+                  {demoOtp && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs flex items-center justify-between animate-fade-in">
+                      <div className="flex items-center gap-2 text-slate-700 font-medium">
+                        <KeyRound className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span>Demo OTP: <strong className="font-mono text-blue-700 text-sm tracking-wider">{demoOtp}</strong></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleDemoAutofill}
+                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-colors uppercase tracking-wider"
+                      >
+                        Autofill
+                      </button>
+                    </div>
+                  )}
+
+                  <Input 
+                    label="New Password" 
+                    id="new-password" 
+                    type="password" 
+                    value={newPassword} 
+                    onChange={e => setNewPassword(e.target.value)} 
+                    placeholder="Min. 6 characters" 
+                    required 
+                  />
+
+                  <Input 
+                    label="Confirm New Password" 
+                    id="confirm-password" 
+                    type="password" 
+                    value={confirmPassword} 
+                    onChange={e => setConfirmPassword(e.target.value)} 
+                    placeholder="••••••••" 
+                    required 
+                  />
+
+                  <Button type="submit" className="w-full justify-center gap-2.5" isLoading={isLoading}>
+                    Reset Password & Sign In <ArrowRight className="w-4 h-4" />
+                  </Button>
+                </form>
+
+                <div className="mt-6 pt-5 border-t border-slate-100 flex items-center justify-between text-sm">
+                  <span className="text-slate-500">Didn&apos;t receive the code?</span>
+                  {resendTimer > 0 ? (
+                    <span className="text-slate-400 font-semibold flex items-center gap-1.5 select-none">
+                      <RefreshCw className="w-3.5 h-3.5 animate-spin text-slate-400" /> Resend in {resendTimer}s
+                    </span>
+                  ) : (
+                    <button 
+                      type="button" 
+                      onClick={handleResendOtp}
+                      className="text-[#1a56db] font-bold hover:underline hover:text-blue-700 flex items-center gap-1 transition-colors"
+                    >
+                      Resend Code <Send className="w-3 h-3" />
+                    </button>
+                  )}
                 </div>
               </div>
             </>
@@ -427,6 +688,22 @@ export default function LoginPage() {
                       ))}
                     </div>
                   </div>
+
+                  {demoOtp && (
+                    <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs flex items-center justify-between animate-fade-in">
+                      <div className="flex items-center gap-2 text-slate-700 font-medium">
+                        <KeyRound className="w-4 h-4 text-blue-600 flex-shrink-0" />
+                        <span>Demo OTP: <strong className="font-mono text-blue-700 text-sm tracking-wider">{demoOtp}</strong></span>
+                      </div>
+                      <button
+                        type="button"
+                        onClick={handleDemoAutofill}
+                        className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[10px] font-bold shadow-sm transition-colors uppercase tracking-wider"
+                      >
+                        Autofill
+                      </button>
+                    </div>
+                  )}
 
 
 

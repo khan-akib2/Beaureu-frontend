@@ -10,7 +10,7 @@ import {
 } from "lucide-react";
 import { TRANSLATIONS } from "../../../lib/translations";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const FETCH_OPTS = { credentials: "include" };
 
 // Verhoeff Algorithm Tables
@@ -97,6 +97,7 @@ export default function SettingsPage() {
   const [aadhaarStep, setAadhaarStep] = useState(1);
   const [digiLockerStep, setDigiLockerStep] = useState(1);
   const [timer, setTimer] = useState(0);
+  const [demoAadhaarOtp, setDemoAadhaarOtp] = useState("");
 
   const [aadhaarOtpValues, setAadhaarOtpValues] = useState(["", "", "", "", "", ""]);
   const aadhaarOtpRefs = [
@@ -302,6 +303,7 @@ export default function SettingsPage() {
       const data = await res.json();
       if (res.ok) {
         setTimer(60);
+        if (data.otp) setDemoAadhaarOtp(data.otp);
         setAadhaarOtpValues(["", "", "", "", "", ""]);
         showStatus("OTP resent successfully! Check your email. ✓");
 
@@ -339,6 +341,7 @@ export default function SettingsPage() {
         if (res.ok) {
           setTimer(60);
           setAadhaarStep(2);
+          if (data.otp) setDemoAadhaarOtp(data.otp);
           setAadhaarOtpValues(["", "", "", "", "", ""]);
           showStatus("Verification OTP sent to your registered email! ✓");
 
@@ -377,6 +380,13 @@ export default function SettingsPage() {
       } finally {
         setLoading(false);
       }
+    }
+  };
+
+  const handleDemoAadhaarAutofill = () => {
+    if (demoAadhaarOtp && demoAadhaarOtp.length === 6) {
+      setAadhaarOtpValues(demoAadhaarOtp.split(""));
+      aadhaarOtpRefs[5].current?.focus();
     }
   };
 
@@ -501,18 +511,18 @@ export default function SettingsPage() {
                     <div className="flex items-center gap-2 mt-1.5">
                       {avatarFile ? (
                         <span className="text-[9px] font-bold uppercase tracking-wider text-emerald-600 bg-emerald-50 px-2 py-0.5 rounded-full border border-emerald-100">
-                          ✓ New photo ready
+                          {t("new_photo_ready")}
                         </span>
                       ) : (
                         <span className="text-[9px] font-bold uppercase tracking-wider text-[#1a56db] bg-blue-50 px-2 py-0.5 rounded-full border border-blue-100">
-                          Verified Citizen
+                          {t("verified_citizen")}
                         </span>
                       )}
                     </div>
                     {avatarFile && (
                       <button type="button" onClick={() => { setAvatarFile(null); setAvatarPreview(null); }}
                         className="text-[10px] text-red-500 hover:underline mt-1 block">
-                        Remove photo
+                        {t("remove_photo")}
                       </button>
                     )}
                   </div>
@@ -551,8 +561,8 @@ export default function SettingsPage() {
                   <Shield className="w-4 h-4" />
                 </div>
                 <div>
-                  <CardTitle className="text-sm font-bold text-slate-900">Physical Aadhaar Card Preview</CardTitle>
-                  <CardDescription className="text-xs">Your digitally verified secure physical credential</CardDescription>
+                  <CardTitle className="text-sm font-bold text-slate-900">{t("physical_aadhaar_preview")}</CardTitle>
+                  <CardDescription className="text-xs">{t("physical_aadhaar_preview_sub")}</CardDescription>
                 </div>
               </CardHeader>
               <CardContent className="pt-6">
@@ -701,7 +711,7 @@ export default function SettingsPage() {
                   <Input label={t("confirm_password")} id="confirm-password" type="password" placeholder="Re-enter new password" value={confirmPassword} onChange={(e) => setConfirmPassword(e.target.value)} />
                 </div>
                 <div className="p-3.5 rounded-xl bg-amber-50 border border-amber-100 text-[10px] text-amber-700 font-semibold">
-                  Password must be at least 8 characters.
+                  {t("password_requirement")}
                 </div>
                 <Button
                   type="submit"
@@ -916,8 +926,8 @@ export default function SettingsPage() {
                 
                 {aadhaarNum.replace(/\s+/g, "").length === 12 && !validateVerhoeff(aadhaarNum) && (
                   <div className="p-2.5 rounded-xl bg-amber-50 border border-amber-200 text-[10px] text-amber-700 font-semibold flex flex-col gap-1">
-                    <span>⚠️ Checksum validation failed. Make sure the number is entered correctly.</span>
-                    <span>For testing, click below to use the valid demo number:</span>
+                    <span>⚠️ {t("aadhaar_checksum_err")}</span>
+                    <span>{t("aadhaar_test_tip_click")}</span>
                     <button
                       type="button"
                       onClick={() => setAadhaarNum(formatAadhaar("365892059182"))}
@@ -930,7 +940,7 @@ export default function SettingsPage() {
 
                 {aadhaarNum.replace(/\s+/g, "").length < 12 && (
                   <div className="text-[10px] text-slate-400 font-medium">
-                    Tip: Use the valid test Aadhaar number:{" "}
+                    {t("aadhaar_test_tip")}{" "}
                     <button
                       type="button"
                       onClick={() => setAadhaarNum(formatAadhaar("365892059182"))}
@@ -946,7 +956,7 @@ export default function SettingsPage() {
                     {t("cancel")}
                   </Button>
                   <Button type="submit" isLoading={loading} className="bg-[#1a56db] text-white font-bold text-xs px-4 py-2 rounded-xl">
-                    Verify
+                    {t("verify")}
                   </Button>
                 </div>
               </form>
@@ -956,7 +966,7 @@ export default function SettingsPage() {
               <form onSubmit={handleAadhaarSubmit} className="space-y-4">
                 <div className="space-y-2">
                   <label className="text-xs font-bold text-slate-600 uppercase tracking-wide block text-center mb-1">
-                    Verification OTP
+                    {t("verification_otp")}
                   </label>
                   <div className="flex justify-between gap-2" onPaste={handleAadhaarOtpPaste}>
                     {aadhaarOtpValues.map((val, idx) => (
@@ -977,32 +987,45 @@ export default function SettingsPage() {
                   </div>
                 </div>
 
+                {demoAadhaarOtp && (
+                  <div className="p-3 bg-blue-50 border border-blue-100 rounded-xl text-xs flex items-center justify-between mt-3 animate-fade-in">
+                    <span className="text-slate-700 font-semibold">{t("demo_otp_label")} <strong className="font-mono text-blue-700 text-sm tracking-wider">{demoAadhaarOtp}</strong></span>
+                    <button
+                      type="button"
+                      onClick={handleDemoAadhaarAutofill}
+                      className="px-2.5 py-1 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-[9px] font-bold shadow-sm transition-colors uppercase tracking-wider"
+                    >
+                      {t("autofill")}
+                    </button>
+                  </div>
+                )}
+
 
                 
                 <p className="text-[10px] text-slate-400 font-medium leading-relaxed text-center">
-                  We have sent a verification code to your registered email/mobile. Please check your inbox.
+                  {t("otp_sent_info")}
                 </p>
 
                 <div className="flex items-center justify-between text-[10px] text-slate-500 font-semibold py-1">
                   {timer > 0 ? (
-                    <span>Resend code in <strong className="text-[#1a56db] font-bold">{timer}s</strong></span>
+                    <span>{t("resend_code_in")} <strong className="text-[#1a56db] font-bold">{timer}s</strong></span>
                   ) : (
                     <button
                       type="button"
                       onClick={handleResendOtp}
                       className="text-[#1a56db] font-bold hover:underline"
                     >
-                      Resend OTP code
+                      {t("resend_otp_code")}
                     </button>
                   )}
                 </div>
 
                 <div className="flex gap-2 justify-end">
                   <Button type="button" variant="outline" className="text-xs px-4 py-2" onClick={() => { setAadhaarStep(1); setAadhaarOtpValues(["", "", "", "", "", ""]); }}>
-                    Back
+                    {t("back")}
                   </Button>
                   <Button type="submit" isLoading={loading} className="bg-[#1a56db] text-white font-bold text-xs px-4 py-2 rounded-xl">
-                    Submit
+                    {t("submit")}
                   </Button>
                 </div>
               </form>
@@ -1015,7 +1038,7 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-xs font-bold text-slate-800">{t("link_success")}</p>
                 <Button type="button" className="bg-[#1a56db] text-white text-xs px-6 py-2 rounded-xl" onClick={() => { setShowAadhaarModal(false); setAadhaarStep(1); setAadhaarNum(""); setAadhaarOtp(""); setAadhaarOtpValues(["", "", "", "", "", ""]); }}>
-                  Done
+                  {t("done")}
                 </Button>
               </div>
             )}
@@ -1043,7 +1066,7 @@ export default function SettingsPage() {
                     {t("cancel")}
                   </Button>
                   <Button type="submit" isLoading={loading} className="bg-[#1a56db] text-white font-bold text-xs px-4 py-2 rounded-xl">
-                    Link DigiLocker
+                    {t("link_digilocker")}
                   </Button>
                 </div>
               </form>
@@ -1056,7 +1079,7 @@ export default function SettingsPage() {
                 </div>
                 <p className="text-xs font-bold text-slate-800">{t("link_success")}</p>
                 <Button type="button" className="bg-[#1a56db] text-white text-xs px-6 py-2 rounded-xl" onClick={() => { setShowDigiLockerModal(false); setDigiLockerStep(1); }}>
-                  Done
+                  {t("done")}
                 </Button>
               </div>
             )}

@@ -24,7 +24,7 @@ import {
   WalletCards
 } from "lucide-react";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const FETCH_OPTS = { credentials: "include" };
 
 const cardVariants = {
@@ -288,8 +288,8 @@ export default function DashboardFrame() {
                   <ChevronRight className="h-4 w-4 text-[#94A3B8]" />
                 </div>
                 <div className="space-y-2.5">
-                  {card.rows.map((row) => (
-                    <div key={`${card.title}-${row.primary}`} className="rounded-2xl bg-[#F8FAFC] px-4 py-2.5">
+                  {card.rows.map((row, i) => (
+                    <div key={`${card.title}-${row.primary}-${i}`} className="rounded-2xl bg-[#F8FAFC] px-4 py-2.5">
                       <div className="flex items-center justify-between gap-3">
                         <p className="truncate text-sm font-bold text-[#0F172A]">{row.primary}</p>
                         <span className="shrink-0 rounded-full bg-white px-2 py-1 text-[10px] font-bold text-[#0F766E]">{row.status}</span>

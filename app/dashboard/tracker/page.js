@@ -82,6 +82,7 @@ const WORKFLOW_STAGES = [
 ];
 
 export default function TrackerPage() {
+  const wizardFileInputRef = useRef(null);
   const [trackers, setTrackers] = useState([]);
   const [selectedTracker, setSelectedTracker] = useState(null);
   const [documents, setDocuments] = useState([]);
@@ -137,6 +138,7 @@ export default function TrackerPage() {
       }
       if (loadedTrackers.length > 0) {
         setSelectedTracker(loadedTrackers[0]);
+        setCopilotHistory(loadedTrackers[0].copilotHistory || []);
       }
     } catch (err) {
       console.error("Failed to load tracker analytics data:", err);
@@ -303,7 +305,8 @@ export default function TrackerPage() {
 
     const userMessage = copilotMsg.trim();
     setCopilotMsg("");
-    setCopilotHistory(prev => [...prev, { role: "user", content: userMessage }]);
+    const newUserHistory = [...copilotHistory, { role: "user", content: userMessage }];
+    setCopilotHistory(newUserHistory);
     setCopilotLoading(true);
 
     try {
@@ -312,14 +315,19 @@ export default function TrackerPage() {
         credentials: "include",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
+          applicationId: selectedTracker._id,
           schemeName: selectedTracker.title,
           department: selectedTracker.department,
-          messages: [...copilotHistory, { role: "user", content: userMessage }]
+          messages: newUserHistory
         })
       });
       const data = await res.json();
       if (res.ok && data.response) {
-        setCopilotHistory(prev => [...prev, { role: "model", content: data.response }]);
+        const newFullHistory = [...newUserHistory, { role: "model", content: data.response }];
+        setCopilotHistory(newFullHistory);
+        // Sync state locally to prevent loss before refresh
+        setSelectedTracker(prev => ({ ...prev, copilotHistory: newFullHistory }));
+        setTrackers(prev => prev.map(t => t._id === selectedTracker._id ? { ...t, copilotHistory: newFullHistory } : t));
       } else {
         setCopilotHistory(prev => [...prev, { role: "model", content: "I am having trouble accessing the AI briefing logs right now. Please try again soon." }]);
       }
@@ -464,7 +472,7 @@ export default function TrackerPage() {
                       key={app._id}
                       onClick={() => {
                         setSelectedTracker(app);
-                        setCopilotHistory([]);
+                        setCopilotHistory(app.copilotHistory || []);
                       }}
                       className={`p-4 rounded-2xl border cursor-pointer transition-all flex items-center justify-between ${
                         selectedTracker?._id === app._id
@@ -678,7 +686,7 @@ export default function TrackerPage() {
               </Card>
 
               {/* AI Guidance & Interactive Copilot Desk */}
-              <Card className="bg-gradient-to-br from-slate-900 to-indigo-950 text-slate-350 border-slate-800 shadow-lg relative overflow-hidden" hover={false}>
+              <Card glass={false} className="border border-slate-800 bg-gradient-to-br from-slate-900 to-indigo-950 text-slate-350 shadow-lg relative overflow-hidden" hover={false}>
                 
                 {/* Glowing BG elements */}
                 <div className="absolute -top-12 -right-12 w-36 h-36 bg-blue-500/10 rounded-full blur-xl pointer-events-none" />
@@ -955,11 +963,11 @@ export default function TrackerPage() {
 
                   {/* Drag drop zone */}
                   <div 
-                    onClick={() => document.getElementById("wizard-file-input").click()}
+                    onClick={() => wizardFileInputRef.current?.click()}
                     className="border-2 border-dashed border-slate-300 hover:border-blue-500 rounded-3xl p-8 bg-slate-50 flex flex-col items-center justify-center cursor-pointer transition-all active:scale-98"
                   >
                     <input
-                      id="wizard-file-input"
+                      ref={wizardFileInputRef}
                       type="file"
                       className="hidden"
                       onChange={handleWizardFileUpload}

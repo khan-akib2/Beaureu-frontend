@@ -6,6 +6,8 @@ import Button from "@/components/ui/Button";
 import TextArea from "@/components/ui/TextArea";
 import { Languages, Copy, Volume2, VolumeX, Check, ArrowRight, FileText, Sparkles } from "lucide-react";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function TranslatePage() {
   const [text, setText] = useState("");
   const [language, setLanguage] = useState("Hindi");
@@ -19,7 +21,7 @@ export default function TranslatePage() {
     if (!text.trim()) return;
     setLoading(true); setError(""); setResult(""); setSpeaking(false);
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/translate`, { credentials: "include",  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, language }) });
+      const res = await fetch(`${API}/api/ai/translate`, { credentials: "include",  method: "POST", headers: { "Content-Type": "application/json" }, body: JSON.stringify({ text, language }) });
       const data = await res.json();
       if (res.ok) { setResult(data.translation); }
       else { setError(data.error || "Simplification failed."); }

@@ -13,6 +13,8 @@ import {
   History
 } from "lucide-react";
 
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
+
 export default function EligibilityPage() {
   const [age, setAge] = useState("");
   const [income, setIncome] = useState("");
@@ -30,7 +32,7 @@ export default function EligibilityPage() {
 
   async function fetchHistory() {
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/eligibility`, { credentials: "include" });
+      const res = await fetch(`${API}/api/ai/eligibility`, { credentials: "include" });
       if (res.ok) {
         const data = await res.json();
         setHistory(data.history || []);
@@ -62,7 +64,7 @@ export default function EligibilityPage() {
     setResults([]);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/eligibility`, { credentials: "include", 
+      const res = await fetch(`${API}/api/ai/eligibility`, { credentials: "include", 
         method: "POST",
         headers: { "Content-Type": "application/json" },
         credentials: "include",
@@ -349,7 +351,7 @@ function GuidePortal({ scheme, onClose }) {
   async function fetchGuide() {
     try {
       setLoading(true);
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/guide`, {
+      const res = await fetch(`${API}/api/ai/guide`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
@@ -394,7 +396,7 @@ function GuidePortal({ scheme, onClose }) {
     setChatLoading(true);
 
     try {
-      const res = await fetch(`${process.env.NEXT_PUBLIC_API_URL}/api/ai/guide/chat`, {
+      const res = await fetch(`${API}/api/ai/guide/chat`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({

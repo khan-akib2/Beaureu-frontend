@@ -7,7 +7,7 @@ import {
 } from "lucide-react";
 import { useUser } from "../layout";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 const TYPE_CONFIG = {
   info:    { icon: Info,          bg: "bg-blue-50",    border: "border-blue-100",   icon_color: "text-[#1a56db]",  badge: "bg-blue-50 text-[#1a56db] border-blue-100" },

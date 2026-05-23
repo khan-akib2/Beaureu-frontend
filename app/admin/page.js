@@ -29,7 +29,7 @@ import {
   Legend
 } from "recharts";
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 
 // ── Status badge helper ───────────────────────────────────────────────────────
 function StatusPill({ status }) {

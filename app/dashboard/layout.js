@@ -28,7 +28,7 @@ import { TRANSLATIONS } from "../../lib/translations";
 const UserContext = createContext(null);
 export const useUser = () => useContext(UserContext);
 
-const API = process.env.NEXT_PUBLIC_API_URL;
+const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000";
 const FETCH_OPTS = { credentials: "include" };
 
 export default function DashboardLayout({ children }) {
@@ -116,13 +116,13 @@ export default function DashboardLayout({ children }) {
   };
 
   const navLinks = [
-    { name: "Dashboard", path: "/dashboard", icon: Home },
-    { name: "AI Assistant", path: "/dashboard/chat", icon: Bot },
-    { name: "Services", path: "/dashboard/eligibility", icon: BriefcaseBusiness },
-    { name: "Document Verification", path: "/dashboard/upload", icon: ShieldCheck },
-    { name: "Applications", path: "/dashboard/tracker", icon: FileText },
-    { name: "Notifications", path: "/dashboard/notifications", icon: Bell, badge: notifications.filter((n) => !n.read).length || null },
-    { name: "Settings", path: "/dashboard/settings", icon: Settings },
+    { name: "Dashboard", key: "nav_dashboard", path: "/dashboard", icon: Home },
+    { name: "AI Assistant", key: "nav_speak_ai", path: "/dashboard/chat", icon: Bot },
+    { name: "Services", key: "nav_services", path: "/dashboard/eligibility", icon: BriefcaseBusiness },
+    { name: "Document Verification", key: "nav_documents", path: "/dashboard/upload", icon: ShieldCheck },
+    { name: "Applications", key: "nav_my_applications", path: "/dashboard/tracker", icon: FileText },
+    { name: "Notifications", key: "nav_notifications", path: "/dashboard/notifications", icon: Bell, badge: notifications.filter((n) => !n.read).length || null },
+    { name: "Settings", key: "nav_profile", path: "/dashboard/settings", icon: Settings },
   ];
 
   const unreadCount = notifications.filter((n) => !n.read).length;
@@ -131,9 +131,7 @@ export default function DashboardLayout({ children }) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#F8FAFC]">
         <div className="flex flex-col items-center gap-4">
-          <div className="w-12 h-12 rounded-2xl bg-[#1D4ED8] flex items-center justify-center shadow-lg shadow-blue-500/20">
-            <ShieldCheck className="w-6 h-6 text-white" />
-          </div>
+          <img src="/logo.jpg" alt="BureauAI Logo" className="h-12 w-auto object-contain bg-white p-1 rounded-2xl shadow-lg" />
           <p className="text-sm font-semibold text-slate-500">Verifying citizen session...</p>
         </div>
       </div>
@@ -146,7 +144,7 @@ export default function DashboardLayout({ children }) {
         <CommandPalette />
         <div className="flex h-full min-h-0 gap-6 p-4 lg:p-6">
           <aside className="hidden lg:flex w-[276px] shrink-0">
-            <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} />
+            <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} t={t} />
           </aside>
 
           <AnimatePresence>
@@ -154,7 +152,7 @@ export default function DashboardLayout({ children }) {
               <motion.div className="fixed inset-0 z-50 lg:hidden" initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }}>
                 <button className="absolute inset-0 bg-slate-950/30" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu" />
                 <motion.aside initial={{ x: -320 }} animate={{ x: 0 }} exit={{ x: -320 }} transition={{ duration: 0.2 }} className="relative h-full w-[292px] p-3">
-                  <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} />
+                  <SidebarContent user={user} navLinks={navLinks} pathname={pathname} handleLogout={handleLogout} t={t} />
                 </motion.aside>
               </motion.div>
             )}
@@ -167,8 +165,8 @@ export default function DashboardLayout({ children }) {
                   <Menu className="w-5 h-5" />
                 </button>
                 <div className="min-w-0 flex-1">
-                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#64748B]">Citizen Workspace</p>
-                  <h1 className="text-lg font-extrabold tracking-tight text-[#0F172A]">Welcome back, {user?.name?.split(" ")[0] || "Citizen"}</h1>
+                  <p className="text-xs font-bold uppercase tracking-[0.18em] text-[#64748B]">{t("citizen_workspace")}</p>
+                  <h1 className="text-lg font-extrabold tracking-tight text-[#0F172A]">{t("welcome_back")}, {user?.name?.split(" ")[0] || "Citizen"}</h1>
                 </div>
 
                 <button
@@ -176,7 +174,7 @@ export default function DashboardLayout({ children }) {
                   className="hidden md:flex min-w-[260px] items-center gap-3 rounded-2xl border border-[#E5E7EB] bg-[#F8FAFC] px-4 py-2.5 text-sm font-medium text-[#64748B] transition hover:border-blue-200 hover:bg-white"
                 >
                   <Search className="w-4 h-4" />
-                  Search services, schemes, documents
+                  {t("search_placeholder")}
                 </button>
 
                 <div className="relative">
@@ -187,12 +185,12 @@ export default function DashboardLayout({ children }) {
                   {notifPanelOpen && (
                     <div className="absolute right-0 mt-3 w-80 overflow-hidden rounded-[24px] border border-[#E5E7EB] bg-white shadow-xl">
                       <div className="flex items-center justify-between border-b border-slate-100 px-4 py-3">
-                        <span className="text-sm font-bold">Notifications</span>
-                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#1D4ED8]">{unreadCount} unread</span>
+                        <span className="text-sm font-bold">{t("notifications_header")}</span>
+                        <span className="rounded-full bg-blue-50 px-2 py-1 text-[10px] font-bold text-[#1D4ED8]">{unreadCount} {t("unread")}</span>
                       </div>
                       <div className="max-h-72 overflow-y-auto">
                         {notifications.length === 0 ? (
-                          <p className="px-4 py-8 text-center text-sm text-[#64748B]">No notifications yet.</p>
+                          <p className="px-4 py-8 text-center text-sm text-[#64748B]">{t("no_notifications_yet")}</p>
                         ) : notifications.slice(0, 6).map((notif, index) => (
                           <button key={notif._id || index} onClick={() => handleMarkAsRead(notif._id)} className="block w-full border-b border-slate-50 px-4 py-3 text-left transition hover:bg-[#F8FAFC]">
                             <div className="flex items-center justify-between gap-3">
@@ -203,7 +201,7 @@ export default function DashboardLayout({ children }) {
                           </button>
                         ))}
                       </div>
-                      <Link href="/dashboard/notifications" onClick={() => setNotifPanelOpen(false)} className="block px-4 py-3 text-xs font-bold text-[#1D4ED8] hover:bg-blue-50">View all notifications</Link>
+                      <Link href="/dashboard/notifications" onClick={() => setNotifPanelOpen(false)} className="block px-4 py-3 text-xs font-bold text-[#1D4ED8] hover:bg-blue-50">{t("view_all_notifications")}</Link>
                     </div>
                   )}
                 </div>
@@ -217,10 +215,10 @@ export default function DashboardLayout({ children }) {
                   {showDropdown && (
                     <div className="absolute right-0 mt-3 w-52 rounded-2xl border border-[#E5E7EB] bg-white p-2 shadow-xl">
                       <Link href="/dashboard/settings" onClick={() => setShowDropdown(false)} className="flex items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-[#0F172A] hover:bg-[#F8FAFC]">
-                        <User className="w-4 h-4 text-[#64748B]" /> Profile Settings
+                        <User className="w-4 h-4 text-[#64748B]" /> {t("nav_profile")}
                       </Link>
                       <button onClick={handleLogout} className="flex w-full items-center gap-2 rounded-xl px-3 py-2 text-sm font-semibold text-red-600 hover:bg-red-50">
-                        <LogOut className="w-4 h-4" /> Sign Out
+                        <LogOut className="w-4 h-4" /> {t("nav_sign_out")}
                       </button>
                     </div>
                   )}
@@ -238,17 +236,11 @@ export default function DashboardLayout({ children }) {
   );
 }
 
-function SidebarContent({ user, navLinks, pathname, handleLogout }) {
+function SidebarContent({ user, navLinks, pathname, handleLogout, t }) {
   return (
     <div className="flex h-[calc(100vh-3rem)] w-full flex-col rounded-[32px] border border-[#E5E7EB] bg-white p-4 shadow-[0_18px_50px_rgba(15,23,42,0.08)]">
-      <div className="mb-6 flex items-center gap-3 px-2 py-2">
-        <div className="flex h-12 w-12 items-center justify-center rounded-2xl bg-[#EEF4FF] text-[#1D4ED8]">
-          <ShieldCheck className="h-6 w-6" />
-        </div>
-        <div>
-          <div className="text-lg font-black tracking-tight text-[#0F172A]">BureauAI</div>
-          <p className="text-[11px] font-semibold text-[#64748B]">Citizen Government Assistant</p>
-        </div>
+      <div className="mb-6 flex items-center px-2 py-2">
+        <img src="/logo.jpg" alt="BureauAI Logo" className="h-10 w-auto object-contain" />
       </div>
 
       <nav className="flex-1 space-y-1 overflow-y-auto pr-1">
@@ -266,7 +258,7 @@ function SidebarContent({ user, navLinks, pathname, handleLogout }) {
               }`}
             >
               <Icon className={`h-4 w-4 ${active ? "text-[#1D4ED8]" : "text-[#94A3B8] group-hover:text-[#1D4ED8]"}`} />
-              <span className="flex-1">{link.name}</span>
+              <span className="flex-1">{t(link.key)}</span>
               {link.badge > 0 && <span className="rounded-full bg-[#F59E0B] px-2 py-0.5 text-[10px] text-white">{link.badge}</span>}
             </Link>
           );
@@ -282,12 +274,12 @@ function SidebarContent({ user, navLinks, pathname, handleLogout }) {
           </div>
         </div>
         <Link href="/dashboard/chat" className="mt-4 flex items-center justify-center gap-2 rounded-2xl bg-[#1D4ED8] px-4 py-2.5 text-sm font-bold text-white shadow-sm transition hover:bg-[#1E3A8A]">
-          <Sparkles className="h-4 w-4" /> Ask BureauAI
+          <Sparkles className="h-4 w-4" /> {t("dashboard_ask_ai")}
         </Link>
       </div>
 
       <button onClick={handleLogout} className="mt-3 flex items-center justify-center gap-2 rounded-2xl px-4 py-3 text-sm font-bold text-[#64748B] transition hover:bg-red-50 hover:text-red-600">
-        <LogOut className="h-4 w-4" /> Sign Out
+        <LogOut className="h-4 w-4" /> {t("nav_sign_out")}
       </button>
     </div>
   );
